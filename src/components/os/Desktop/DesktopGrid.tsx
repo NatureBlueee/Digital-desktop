@@ -9,7 +9,8 @@ import { useSelection } from "@/hooks/useSelection";
 import DesktopContextMenu, { MENU_ID } from "./ContextMenu";
 import { useContextMenu } from "react-contexify";
 
-const GRID_SIZE = 96;
+const GRID_W = 75;
+const GRID_H = 100;
 
 export default function DesktopGrid() {
   const { icons, updateIconPosition, selectedIconIds, selectIcon, deselectAll, setSelectedIcons, openWindow } = useDesktopStore();
@@ -37,10 +38,15 @@ export default function DesktopGrid() {
     const icon = icons.find((i: DesktopIconType) => i.id === iconId);
 
     if (icon) {
-      const newPixelX = (icon.x * GRID_SIZE) + delta.x;
-      const newPixelY = (icon.y * GRID_SIZE) + delta.y;
-      const newGridX = Math.max(0, Math.round(newPixelX / GRID_SIZE));
-      const newGridY = Math.max(0, Math.round(newPixelY / GRID_SIZE));
+      const newPixelX = (icon.x * GRID_W) + delta.x;
+      const newPixelY = (icon.y * GRID_H) + delta.y;
+      
+      const maxGridX = Math.floor((window.innerWidth - 10) / GRID_W);
+      const maxGridY = Math.floor((window.innerHeight - 100) / GRID_H); // 100px buffer for taskbar
+
+      const newGridX = Math.max(0, Math.min(Math.round(newPixelX / GRID_W), maxGridX));
+      const newGridY = Math.max(0, Math.min(Math.round(newPixelY / GRID_H), maxGridY));
+      
       updateIconPosition(iconId, newGridX, newGridY);
     }
   };
@@ -49,10 +55,10 @@ export default function DesktopGrid() {
   React.useEffect(() => {
     if (selectionBox) {
       const selected = icons.filter((icon: DesktopIconType) => {
-        const iconX = icon.x * GRID_SIZE + 8;
-        const iconY = icon.y * GRID_SIZE + 8;
-        const iconW = 80;
-        const iconH = 80;
+        const iconX = icon.x * GRID_W + 2; // Reduced padding
+        const iconY = icon.y * GRID_H + 2;
+        const iconW = 70; // Adjusted width
+        const iconH = 90; // Adjusted height
 
         return (
           iconX < selectionBox.startX + selectionBox.width &&

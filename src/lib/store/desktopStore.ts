@@ -24,11 +24,13 @@ export interface WindowState {
 
 interface DesktopState {
   icons: DesktopIcon[];
+  pinnedApps: { id: string; icon: string; title: string }[];
   selectedIconIds: string[];
   windows: WindowState[];
   activeWindowId: string | null;
   
   setIcons: (icons: DesktopIcon[]) => void;
+  setPinnedApps: (apps: { id: string; icon: string; title: string }[]) => void;
   updateIconPosition: (id: string, x: number, y: number) => void;
   selectIcon: (id: string, multi: boolean) => void;
   setSelectedIcons: (ids: string[]) => void;
@@ -44,22 +46,33 @@ interface DesktopState {
 export const useDesktopStore = create<DesktopState>((set) => ({
   icons: [
     { id: 'this-pc', title: '此电脑', icon: '/icons/this_pc_icon__windows_11__by_satellitedish555_dgv3zid.png', x: 0, y: 0, type: 'app', appId: 'this-pc' },
-    { id: 'github-desktop', title: 'GitHub Desktop', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Github-desktop-logo-symbol.svg/2048px-Github-desktop-logo-symbol.svg.png', x: 0, y: 1, type: 'app', appId: 'github', shortcut: true },
-    { id: 'notion', title: 'Notion', icon: '/icons/notion.png', x: 0, y: 2, type: 'app', appId: 'notion', shortcut: true },
-    { id: 'recycle-bin', title: '回收站', icon: '/icons/trash.png', x: 0, y: 3, type: 'app', appId: 'recycle-bin' },
-    { id: 'wechat', title: '微信', icon: '/icons/wechat.png', x: 0, y: 4, type: 'app', appId: 'wechat', shortcut: true },
-    { id: 'antigravity', title: 'Antigravity', icon: '/icons/antigravity.png', x: 0, y: 5, type: 'app', appId: 'antigravity', shortcut: true },
-    { id: 'google-drive', title: 'Google Drive', icon: 'https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png', x: 0, y: 6, type: 'app', appId: 'google-drive', shortcut: true },
-    { id: 'control-panel', title: '控制面板', icon: 'https://img.icons8.com/fluency/96/control-panel.png', x: 0, y: 7, type: 'app', appId: 'control-panel', shortcut: true },
-    { id: 'cursor', title: 'Cursor', icon: '/icons/cursor-ai-code-icon.svg', x: 0, y: 8, type: 'app', appId: 'cursor', shortcut: true },
-    { id: 'claude', title: 'Claude', icon: '/icons/claude-ai-icon.svg', x: 0, y: 9, type: 'app', appId: 'claude', shortcut: true },
-    { id: 'new-folder', title: '新建文件夹', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 1, y: 0, type: 'folder' },
+    { id: 'notion', title: 'Notion', icon: '/icons/notion.png', x: 0, y: 1, type: 'app', appId: 'notion', shortcut: true },
+    { id: 'recycle-bin', title: '回收站', icon: '/icons/trash.png', x: 0, y: 2, type: 'app', appId: 'recycle-bin' },
+    { id: 'wechat', title: '微信', icon: '/icons/wechat.png', x: 0, y: 3, type: 'app', appId: 'wechat', shortcut: true },
+    { id: 'antigravity', title: 'Antigravity', icon: '/icons/antigravity.png', x: 0, y: 4, type: 'app', appId: 'antigravity', shortcut: true },
+    { id: 'google-drive', title: 'Google Drive', icon: 'https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png', x: 1, y: 0, type: 'app', appId: 'google-drive', shortcut: true },
+    { id: 'control-panel', title: '控制面板', icon: 'https://img.icons8.com/fluency/96/control-panel.png', x: 1, y: 1, type: 'app', appId: 'control-panel', shortcut: true },
+    { id: 'cursor', title: 'Cursor', icon: '/icons/cursor-ai-code-icon.svg', x: 1, y: 2, type: 'app', appId: 'cursor', shortcut: true },
+    { id: 'claude', title: 'Claude', icon: '/icons/claude-ai-icon.svg', x: 1, y: 3, type: 'app', appId: 'claude', shortcut: true },
+    { id: 'new-folder', title: '新建文件夹', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 1, y: 4, type: 'folder' },
+  ],
+  pinnedApps: [
+    { id: 'start', icon: 'https://img.icons8.com/fluency/96/windows-11.png', title: 'Start' },
+    { id: 'search', icon: 'https://img.icons8.com/fluency/96/search.png', title: 'Search' },
+    { id: 'widgets', icon: 'weather-icon', title: 'Widgets' },
+    { id: 'wechat', icon: '/icons/wechat.png', title: 'WeChat' },
+    { id: 'file-explorer', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', title: 'File Explorer' },
+    { id: 'antigravity', icon: '/icons/antigravity.png', title: 'Antigravity' },
+    { id: 'chrome', icon: 'https://img.icons8.com/fluency/96/chrome.png', title: 'Google Chrome' },
+    { id: 'notion', icon: '/icons/notion.png', title: 'Notion' },
+    { id: 'cursor', icon: '/icons/cursor-ai-code-icon.svg', title: 'Cursor' },
   ],
   selectedIconIds: [],
   windows: [],
   activeWindowId: null,
 
   setIcons: (icons: DesktopIcon[]) => set({ icons }),
+  setPinnedApps: (apps) => set({ pinnedApps: apps }),
   updateIconPosition: (id: string, x: number, y: number) =>
     set((state: DesktopState) => ({
       icons: state.icons.map((icon: DesktopIcon) =>
@@ -95,6 +108,7 @@ export const useDesktopStore = create<DesktopState>((set) => ({
         zIndex: state.windows.length + 1,
         isMinimized: false,
         isMaximized: false,
+        position: { x: 100 + state.windows.length * 20, y: 50 + state.windows.length * 20 },
       };
       return {
         windows: [...state.windows, newWindow],

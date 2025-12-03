@@ -40,15 +40,14 @@ export default function DesktopIcon({
       ref={setNodeRef}
       style={{
         position: "absolute",
-        left: icon.x * 96 + 8, // 96px grid size, 8px padding
-        top: icon.y * 96 + 8,
+        left: icon.x * 75 + 2, // 75px grid width
+        top: icon.y * 100 + 2, // 100px grid height
         ...style,
       }}
       {...listeners}
       {...attributes}
       className={cn(
-        "w-[80px] h-[80px] flex flex-col items-center justify-center gap-1 rounded-sm border border-transparent hover:bg-white/10 transition-colors cursor-default group",
-        selected && "bg-white/20 border-white/30",
+        "w-[74px] h-[100px] flex flex-col items-center justify-start pt-2 gap-0.5 cursor-default group outline-none",
         isDragging && "opacity-50"
       )}
       onClick={(e) => {
@@ -60,27 +59,28 @@ export default function DesktopIcon({
         onDoubleClick();
       }}
     >
-      <div className="w-10 h-10 flex items-center justify-center drop-shadow-sm transition-transform group-hover:scale-105 relative">
-        {isUrl ? (
-            <img src={icon.icon} alt={icon.title} className="w-full h-full object-contain" draggable={false} />
-        ) : (
-            IconComponent && <IconComponent size={28} strokeWidth={1.5} className="text-blue-400" />
-        )}
-        {icon.shortcut && (
-            <div className="absolute bottom-0 left-0 w-3.5 h-3.5 bg-white rounded-sm shadow-sm flex items-center justify-center">
-                <img src="https://img.icons8.com/material-rounded/24/000000/forward-arrow.png" alt="shortcut" className="w-2.5 h-2.5 opacity-60 -rotate-45" />
-            </div>
-        )}
+      {/* Inner Content Wrapper for Selection/Hover State */}
+      <div className={cn(
+          "flex flex-col items-center justify-center p-1 rounded-[2px] transition-colors border border-transparent",
+          selected ? "bg-white/20 border-white/10" : "group-hover:bg-white/10"
+      )}>
+          <div className="w-12 h-12 flex items-center justify-center drop-shadow-sm transition-transform relative mb-1">
+            {isUrl ? (
+                <img src={icon.icon} alt={icon.title} className="w-full h-full object-contain" draggable={false} />
+            ) : (
+                IconComponent && <IconComponent size={32} strokeWidth={1.5} className="text-blue-400" />
+            )}
+          </div>
+          <span
+            className={cn(
+              "text-[12px] text-white text-center px-1 rounded-[2px] line-clamp-2 drop-shadow-md select-none max-w-[72px] leading-[1.1] break-words",
+              selected ? "" : "group-hover:text-white"
+            )}
+            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
+          >
+            {icon.title}
+          </span>
       </div>
-      <span
-        className={cn(
-          "text-[11px] text-white text-center px-1 rounded-sm line-clamp-2 drop-shadow-md select-none max-w-[72px] leading-tight break-words",
-          selected ? "bg-blue-600/80" : "group-hover:text-white"
-        )}
-        style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
-      >
-        {icon.title}
-      </span>
     </div>
   );
 }

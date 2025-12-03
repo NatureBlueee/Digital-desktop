@@ -38,6 +38,7 @@ The project follows a modern **Full-Stack** architecture, combining a high-fidel
     - **DesktopGrid**: Manages icons, drag-and-drop, selection. (管理图标、拖拽、框选)
     - **WindowManager**: Handles window lifecycle. (处理窗口生命周期：打开、关闭、最小化、层级)
     - **Taskbar**: Manages active apps and system tray. (管理活动应用和系统托盘)
+    - **Icons**: Dedicated React components for SVGs to improve maintainability and performance. (独立的 SVG React 组件，提高可维护性和性能)
     - **Apps**: Individual React components rendering specific content. (渲染具体内容的独立组件，如 Claude, GitHub)
 
 2.  **Data Layer (The OS Kernel) / 数据层（OS 内核）**
