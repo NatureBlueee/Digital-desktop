@@ -4,7 +4,7 @@ import React from "react";
 import { Rnd } from "react-rnd";
 import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
-import ClaudeApp from "@/components/apps/Claude/ClaudeApp";
+import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
