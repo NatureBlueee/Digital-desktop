@@ -1,20 +1,4 @@
-export interface ClaudeMessage {
-  uuid: string;
-  text: string;
-  sender: 'human' | 'assistant';
-  created_at: string;
-  updated_at: string;
-  attachments?: any[];
-  files?: any[];
-}
-
-export interface ClaudeConversation {
-  uuid: string;
-  name: string;
-  created_at: string;
-  updated_at: string;
-  chat_messages: ClaudeMessage[];
-}
+import { ClaudeAppData, ClaudeConversation, ClaudeMessage } from "@/types";
 
 // Mock data for now
 export const MOCK_CONVERSATION: ClaudeConversation = {
