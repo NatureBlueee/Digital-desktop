@@ -12,6 +12,7 @@ interface WindowFrameProps {
   onMaximize: () => void;
   onFocus: () => void;
   children: React.ReactNode;
+  hideTitleBar?: boolean;
 }
 
 export default function WindowFrame({ 
@@ -21,7 +22,8 @@ export default function WindowFrame({
   onMinimize, 
   onMaximize, 
   onFocus,
-  children 
+  children,
+  hideTitleBar
 }: WindowFrameProps) {
   return (
     <div 
@@ -32,6 +34,7 @@ export default function WindowFrame({
       onClick={onFocus}
     >
       {/* Title Bar */}
+      {!hideTitleBar && (
       <div 
         className={cn(
           "h-9 flex items-center justify-between px-3 select-none drag-handle",
@@ -63,6 +66,7 @@ export default function WindowFrame({
           </button>
         </div>
       </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 bg-white/95 backdrop-blur-xl relative overflow-hidden">

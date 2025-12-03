@@ -37,9 +37,10 @@ export default function WindowManager() {
               onMinimize={() => minimizeWindow(window.id)}
               onMaximize={() => maximizeWindow(window.id)}
               onFocus={() => focusWindow(window.id)}
+              hideTitleBar={window.appId === 'claude'}
             >
               {window.appId === 'claude' ? (
-                <ClaudeApp />
+                <ClaudeApp windowId={window.id} />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>

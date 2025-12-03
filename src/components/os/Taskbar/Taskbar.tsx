@@ -87,7 +87,7 @@ function SortableApp({ app, isActive, isOpen, onClick }: SortableAppProps) {
         <button
             onClick={onClick}
             className={cn(
-                "h-10 w-10 flex items-center justify-center rounded-md transition-all relative group",
+                "h-[30px] w-[30px] flex items-center justify-center rounded-md transition-all relative group",
                 isActive ? "bg-white/60 shadow-sm" : "hover:bg-white/40"
             )}
             title={app.title}
@@ -96,11 +96,11 @@ function SortableApp({ app, isActive, isOpen, onClick }: SortableAppProps) {
                  <WeatherIcon className="w-[28px] h-[28px] opacity-80 group-hover:scale-105 transition-transform" />
             ) : isUrl ? (
                 <img src={app.icon} alt={app.title} className={cn(
-                    "w-[30px] h-[30px] object-contain transition-transform duration-200",
+                    "w-[24px] h-[24px] object-contain transition-transform duration-200",
                     isActive ? "scale-100" : "group-hover:scale-110"
                 )} />
             ) : (
-                Icon && <Icon size={30} strokeWidth={1.5} className={cn(
+                Icon && <Icon size={24} strokeWidth={1.5} className={cn(
                     "transition-transform duration-200",
                     isActive ? "text-blue-600" : "text-gray-700 group-hover:scale-110"
                 )} />
@@ -184,10 +184,10 @@ export default function Taskbar() {
     <div className="absolute bottom-0 w-full h-[48px] bg-[#e1ebff]/90 backdrop-blur-[35px] flex items-center justify-between px-4 z-50 select-none border-t border-white/40 font-[Segoe_UI] antialiased">
       
       {/* Left: Start, Search, Widgets, Apps (Left Aligned) */}
-      <div className="flex items-center gap-[26px] h-full pl-2">
+      <div className="flex items-center gap-[21px] h-full pl-2">
         {/* Fixed Start Button */}
         <button 
-            className="h-10 w-10 flex items-center justify-center rounded-md hover:bg-white/50 transition-colors group relative"
+            className="h-[30px] w-[30px] flex items-center justify-center rounded-md hover:bg-white/50 transition-colors group relative"
             title="Start"
             onClick={() => handleAppClick('start')}
         >
@@ -195,7 +195,7 @@ export default function Taskbar() {
         </button>
 
         {/* Fixed Search Bar */}
-        <div className="h-10 w-10 flex items-center justify-center rounded-md hover:bg-white/50 transition-colors cursor-pointer group" onClick={() => handleAppClick('search')}>
+        <div className="h-[30px] w-[30px] flex items-center justify-center rounded-md hover:bg-white/50 transition-colors cursor-pointer group" onClick={() => handleAppClick('search')}>
              <SearchIcon className="opacity-80 group-hover:scale-105 transition-transform" />
         </div>
 
