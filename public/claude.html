@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-screen antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude - AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自定义 Claude 风格变量 */
+        :root {
+            --claude-bg: #FAFAF9;
+            --claude-sidebar: #F5F5F4;
+            --claude-border: #E5E5E5;
+            --claude-text: #1E1E1E;
+            --claude-text-secondary: #737373;
+            --claude-accent: #D97757;
+            --claude-hover: #F0F0EF;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+            background: var(--claude-bg);
+            color: var(--claude-text);
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            background: var(--claude-sidebar);
+            border-right: 1px solid var(--claude-border);
+        }
+
+        .sidebar-item {
+            transition: all 0.2s cubic-bezier(0.165, 0.85, 0.45, 1);
+        }
+
+        .sidebar-item:hover {
+            background: var(--claude-hover);
+        }
+
+        .sidebar-item.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 聊天气泡样式 */
+        .message-bubble {
+            max-width: 48rem;
+            margin: 0 auto;
+        }
+
+        .user-message {
+            background: white;
+            border: 1px solid var(--claude-border);
+            border-radius: 1rem;
+            padding: 1.25rem;
+        }
+
+        .assistant-message {
+            background: transparent;
+            padding: 1.25rem 0;
+        }
+
+        /* 输入框样式 */
+        .chat-input {
+            resize: none;
+            min-height: 56px;
+            max-height: 200px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--claude-accent);
+        }
+
+        /* 代码块样式 */
+        .code-block {
+            background: #2B2B2B;
+            color: #E5E5E5;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: #1E1E1E;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #3B3B3B;
+        }
+
+        /* 滚动条样式 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #D1D5DB;
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #9CA3AF;
+        }
+
+        /* 动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* 响应式 */
+        @media (max-width: 640px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                z-index: 50;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    <!-- 主容器 -->
+    <div class="flex h-full w-full">
+        <!-- 侧边栏 -->
+        <aside class="sidebar w-64 flex flex-col h-full" id="sidebar">
+            <!-- 侧边栏头部 -->
+            <div class="p-4 border-b border-gray-200">
+                <button class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-white transition-all duration-200 sidebar-item">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium">New chat</span>
+                </button>
+            </div>
+
+            <!-- 导航菜单 -->
+            <nav class="flex-1 overflow-y-auto custom-scrollbar p-3">
+                <div class="space-y-1">
+                    <!-- Chats -->
+                    <a href="#" class="sidebar-item active flex items-center gap-3 px-3 py-2.5 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Chats</span>
+                    </a>
+
+                    <!-- Projects -->
+                    <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Projects</span>
+                    </a>
+
+                    <!-- Code -->
+                    <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Code</span>
+                    </a>
+
+                    <!-- Artifacts -->
+                    <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM14 17a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Artifacts</span>
+                    </a>
+                </div>
+
+                <!-- 历史对话 -->
+                <div class="mt-6">
+                    <h3 class="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Recent</h3>
+                    <div class="space-y-1">
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2 rounded-lg group">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600 truncate flex-1">How to build a React app</span>
+                        </a>
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2 rounded-lg group">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600 truncate flex-1">Debug Python error</span>
+                        </a>
+                        <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2 rounded-lg group">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                            </svg>
+                            <span class="text-sm text-gray-600 truncate flex-1">CSS Grid layout help</span>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- 侧边栏底部 -->
+            <div class="p-3 border-t border-gray-200">
+                <button class="sidebar-item flex items-center gap-3 w-full px-3 py-2.5 rounded-lg">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+                        <span class="text-white text-sm font-medium">U</span>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <div class="text-sm font-medium">User</div>
+                        <div class="text-xs text-gray-500">claude.ai</div>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 flex flex-col h-full bg-white">
+            <!-- 顶部栏（移动端） -->
+            <header class="sm:hidden flex items-center gap-3 px-4 py-3 border-b border-gray-200">
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-gray-100 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <h1 class="text-lg font-semibold">Claude</h1>
+            </header>
+
+            <!-- 聊天区域 -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar" id="chat-container">
+                <!-- 欢迎屏幕 -->
+                <div class="flex flex-col items-center justify-center h-full px-4 py-12" id="welcome-screen">
+                    <div class="text-center max-w-2xl">
+                        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center">
+                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-4xl font-serif font-medium mb-4 text-gray-900">Welcome to Claude</h1>
+                        <p class="text-lg text-gray-600 mb-8">
+                            I'm Claude, an AI assistant created by Anthropic. I can help you with writing, analysis, math, coding, and much more.
+                        </p>
+
+                        <!-- 示例卡片 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                            <button class="text-left p-4 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50/30 transition-all duration-200 group">
+                                <div class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-orange-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <h3 class="font-medium text-gray-900 mb-1 group-hover:text-orange-600">Get creative</h3>
+                                        <p class="text-sm text-gray-600">Write a story about a robot learning to paint</p>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <button class="text-left p-4 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50/30 transition-all duration-200 group">
+                                <div class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-orange-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <h3 class="font-medium text-gray-900 mb-1 group-hover:text-orange-600">Code something</h3>
+                                        <p class="text-sm text-gray-600">Build a simple to-do list app in React</p>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <button class="text-left p-4 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50/30 transition-all duration-200 group">
+                                <div class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-orange-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <h3 class="font-medium text-gray-900 mb-1 group-hover:text-orange-600">Analyze data</h3>
+                                        <p class="text-sm text-gray-600">Compare sales trends from last quarter</p>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <button class="text-left p-4 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50/30 transition-all duration-200 group">
+                                <div class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-orange-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <h3 class="font-medium text-gray-900 mb-1 group-hover:text-orange-600">Learn something</h3>
+                                        <p class="text-sm text-gray-600">Explain quantum computing in simple terms</p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 聊天消息容器（隐藏直到有消息） -->
+                <div class="hidden py-8 px-4" id="messages-container">
+                    <!-- 用户消息示例 -->
+                    <div class="message-bubble mb-8 fade-in">
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center shrink-0">
+                                <span class="text-white text-sm font-medium">U</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="user-message">
+                                    <p class="text-gray-900">How can I build a responsive navbar in React?</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI 消息示例 -->
+                    <div class="message-bubble mb-8 fade-in">
+                        <div class="flex gap-4">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 assistant-message">
+                                <div class="prose prose-sm max-w-none">
+                                    <p class="text-gray-900 mb-4">I'd be happy to help you build a responsive navbar in React! Here's a clean implementation using Tailwind CSS and React hooks:</p>
+
+                                    <!-- 代码块 -->
+                                    <div class="code-block mb-4">
+                                        <div class="code-header flex items-center justify-between">
+                                            <span class="text-gray-400">Navbar.jsx</span>
+                                            <button class="text-gray-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-gray-700 transition">
+                                                Copy
+                                            </button>
+                                        </div>
+                                        <pre class="p-4 overflow-x-auto"><code class="text-sm">import { useState } from 'react';
+
+export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    &lt;nav className="bg-white shadow-lg"&gt;
+      &lt;div className="max-w-7xl mx-auto px-4"&gt;
+        &lt;div className="flex justify-between items-center h-16"&gt;
+          &lt;div className="text-xl font-bold"&gt;Logo&lt;/div&gt;
+
+          {/* Desktop Menu */}
+          &lt;div className="hidden md:flex space-x-8"&gt;
+            &lt;a href="#" className="hover:text-blue-500"&gt;Home&lt;/a&gt;
+            &lt;a href="#" className="hover:text-blue-500"&gt;About&lt;/a&gt;
+            &lt;a href="#" className="hover:text-blue-500"&gt;Contact&lt;/a&gt;
+          &lt;/div&gt;
+
+          {/* Mobile Toggle */}
+          &lt;button
+            onClick={() =&gt; setIsOpen(!isOpen)}
+            className="md:hidden"
+          &gt;
+            ☰
+          &lt;/button&gt;
+        &lt;/div&gt;
+
+        {/* Mobile Menu */}
+        {isOpen && (
+          &lt;div className="md:hidden pb-4"&gt;
+            &lt;a href="#" className="block py-2"&gt;Home&lt;/a&gt;
+            &lt;a href="#" className="block py-2"&gt;About&lt;/a&gt;
+            &lt;a href="#" className="block py-2"&gt;Contact&lt;/a&gt;
+          &lt;/div&gt;
+        )}
+      &lt;/div&gt;
+    &lt;/nav&gt;
+  );
+}</code></pre>
+                                    </div>
+
+                                    <p class="text-gray-900">This navbar includes:</p>
+                                    <ul class="list-disc list-inside text-gray-900 space-y-1">
+                                        <li>Responsive design that adapts to mobile and desktop</li>
+                                        <li>Mobile menu toggle with state management</li>
+                                        <li>Clean styling with Tailwind CSS</li>
+                                        <li>Smooth transitions and hover effects</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="border-t border-gray-200 bg-white">
+                <div class="max-w-3xl mx-auto px-4 py-4">
+                    <div class="relative">
+                        <!-- 输入框容器 -->
+                        <div class="flex items-end gap-3 p-3 rounded-2xl border-2 border-gray-200 focus-within:border-orange-300 bg-white transition-all duration-200">
+                            <!-- 附件按钮 -->
+                            <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0 self-end" title="Attach file">
+                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                </svg>
+                            </button>
+
+                            <!-- 输入框 -->
+                            <textarea
+                                class="chat-input flex-1 border-0 focus:ring-0 resize-none bg-transparent"
+                                placeholder="Message Claude..."
+                                rows="1"
+                                onInput="autoResize(this)"
+                            ></textarea>
+
+                            <!-- 发送按钮 -->
+                            <button class="p-2.5 bg-orange-500 hover:bg-orange-600 rounded-xl transition-colors shrink-0 self-end disabled:opacity-50 disabled:cursor-not-allowed" title="Send message">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- 提示文本 -->
+                        <div class="mt-2 px-1 text-xs text-gray-500 text-center">
+                            Claude can make mistakes. Please double-check responses.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 自动调整输入框高度
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        }
+
+        // 切换侧边栏（移动端）
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // 点击外部关闭侧边栏
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const isClickInside = sidebar.contains(event.target) ||
+                                 event.target.closest('[onclick="toggleSidebar()"]');
+
+            if (!isClickInside && window.innerWidth < 640) {
+                sidebar.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>
