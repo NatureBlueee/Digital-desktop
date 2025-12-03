@@ -5,7 +5,7 @@ import { Rnd } from "react-rnd";
 import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
-import ChatGPTApp from "@/components/apps/ChatGPT/ChatGPTApp";
+import { ChatGPTApp } from "@/components/apps/ChatGPT/ChatGPTApp";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -34,71 +34,87 @@ export default function WindowManager() {
             }}
             resizeHandleStyles={{
                 top: {
-                  height: '8px',
+                  height: '6px',
                   top: '0px',
                   cursor: 'ns-resize',
-                  zIndex: 10
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
                 bottom: {
-                  height: '8px',
+                  height: '6px',
                   bottom: '0px',
                   cursor: 'ns-resize',
-                  zIndex: 10
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
                 left: {
-                  width: '8px',
+                  width: '6px',
                   left: '0px',
                   cursor: 'ew-resize',
-                  zIndex: 10
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
                 right: {
-                  width: '8px',
+                  width: '6px',
                   right: '0px',
                   cursor: 'ew-resize',
-                  zIndex: 10
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
                 topRight: {
-                  width: '16px',
-                  height: '16px',
+                  width: '12px',
+                  height: '12px',
                   right: '0px',
                   top: '0px',
                   cursor: 'ne-resize',
-                  zIndex: 20
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
                 topLeft: {
-                  width: '16px',
-                  height: '16px',
+                  width: '12px',
+                  height: '12px',
                   left: '0px',
                   top: '0px',
                   cursor: 'nw-resize',
-                  zIndex: 20
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
                 bottomRight: {
-                  width: '16px',
-                  height: '16px',
+                  width: '12px',
+                  height: '12px',
                   right: '0px',
                   bottom: '0px',
                   cursor: 'se-resize',
-                  zIndex: 20
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
                 bottomLeft: {
-                  width: '16px',
-                  height: '16px',
+                  width: '12px',
+                  height: '12px',
                   left: '0px',
                   bottom: '0px',
                   cursor: 'sw-resize',
-                  zIndex: 20
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
                 },
             }}
             resizeHandleClasses={{
-                top: 'resize-handle resize-handle-top',
-                bottom: 'resize-handle resize-handle-bottom',
-                left: 'resize-handle resize-handle-left',
-                right: 'resize-handle resize-handle-right',
-                topRight: 'resize-handle resize-handle-corner',
-                topLeft: 'resize-handle resize-handle-corner',
-                bottomRight: 'resize-handle resize-handle-corner',
-                bottomLeft: 'resize-handle resize-handle-corner',
+                top: 'window-resize-handle window-resize-edge',
+                bottom: 'window-resize-handle window-resize-edge',
+                left: 'window-resize-handle window-resize-edge',
+                right: 'window-resize-handle window-resize-edge',
+                topRight: 'window-resize-handle window-resize-corner',
+                topLeft: 'window-resize-handle window-resize-corner',
+                bottomRight: 'window-resize-handle window-resize-corner',
+                bottomLeft: 'window-resize-handle window-resize-corner',
             }}
             style={{ zIndex: window.zIndex }}
             onMouseDown={() => focusWindow(window.id)}

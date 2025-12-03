@@ -1,66 +1,85 @@
 import React from 'react';
-import { ChevronDown, Plus, Mic, AudioLines, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Pen, BookOpen, Code, Heart, Cloud, Paperclip, ArrowUp, Mic } from 'lucide-react';
 
-const ChatGPTLogo = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 509.639" className={className} fill="currentColor">
-    <path fillRule="nonzero" d="M412.037 221.764a90.834 90.834 0 004.648-28.67 90.79 90.79 0 00-12.443-45.87c-16.37-28.496-46.738-46.089-79.605-46.089-6.466 0-12.943.683-19.264 2.04a90.765 90.765 0 00-67.881-30.515h-.576c-.059.002-.149.002-.216.002-39.807 0-75.108 25.686-87.346 63.554-25.626 5.239-47.748 21.31-60.682 44.03a91.873 91.873 0 00-12.407 46.077 91.833 91.833 0 0023.694 61.553 90.802 90.802 0 00-4.649 28.67 90.804 90.804 0 0012.442 45.87c16.369 28.504 46.74 46.087 79.61 46.087a91.81 91.81 0 0019.253-2.04 90.783 90.783 0 0067.887 30.516h.576l.234-.001c39.829 0 75.119-25.686 87.357-63.588 25.626-5.242 47.748-21.312 60.682-44.033a91.718 91.718 0 0012.383-46.035 91.83 91.83 0 00-23.693-61.553l-.004-.005zM275.102 413.161h-.094a68.146 68.146 0 01-43.611-15.8 56.936 56.936 0 002.155-1.221l72.54-41.901a11.799 11.799 0 005.962-10.251V241.651l30.661 17.704c.326.163.55.479.596.84v84.693c-.042 37.653-30.554 68.198-68.21 68.273h.001zm-146.689-62.649a68.128 68.128 0 01-9.152-34.085c0-3.904.341-7.817 1.005-11.663.539.323 1.48.897 2.155 1.285l72.54 41.901a11.832 11.832 0 0011.918-.002l88.563-51.137v35.408a1.1 1.1 0 01-.438.94l-73.33 42.339a68.43 68.43 0 01-34.11 9.12 68.359 68.359 0 01-59.15-34.11l-.001.004zm-19.083-158.36a68.044 68.044 0 0135.538-29.934c0 .625-.036 1.731-.036 2.5v83.801l-.001.07a11.79 11.79 0 005.954 10.242l88.564 51.13-30.661 17.704a1.096 1.096 0 01-1.034.093l-73.337-42.375a68.36 68.36 0 01-34.095-59.143 68.412 68.412 0 019.112-34.085l-.004-.003zm251.907 58.621l-88.563-51.137 30.661-17.697a1.097 1.097 0 011.034-.094l73.337 42.339c21.109 12.195 34.132 34.746 34.132 59.132 0 28.604-17.849 54.199-44.686 64.078v-86.308c.004-.032.004-.065.004-.096 0-4.219-2.261-8.119-5.919-10.217zm30.518-45.93c-.539-.331-1.48-.898-2.155-1.286l-72.54-41.901a11.842 11.842 0 00-5.958-1.611c-2.092 0-4.15.558-5.957 1.611l-88.564 51.137v-35.408l-.001-.061a1.1 1.1 0 01.44-.88l73.33-42.303a68.301 68.301 0 0134.108-9.129c37.704 0 68.281 30.577 68.281 68.281a68.69 68.69 0 01-.984 11.545v.005zm-191.843 63.109l-30.668-17.704a1.09 1.09 0 01-.596-.84v-84.692c.016-37.685 30.593-68.236 68.281-68.236a68.332 68.332 0 0143.689 15.804 63.09 63.09 0 00-2.155 1.222l-72.54 41.9a11.794 11.794 0 00-5.961 10.248v.068l-.05 102.23zm16.655-35.91l39.445-22.782 39.444 22.767v45.55l-39.444 22.767-39.445-22.767v-45.535z"/>
+const ClaudeLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <path d="M96.0000 40.0000 L99.5002 42.0000 L99.5002 43.5000 L98.5000 47.0000 L56.0000 57.0000 L52.0040 47.0708 L96.0000 40.0000 M96.0000 40.0000 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(330deg) scaleY(1.075) rotate(-330deg)"}}></path>
+    <path d="M80.1032 10.5903 L84.9968 11.6171 L86.2958 13.2179 L87.5346 17.0540 L87.0213 19.5007 L58.5000 58.5000 L49.0000 49.0000 L75.3008 14.4873 L80.1032 10.5903 M80.1032 10.5903 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(300deg) scaleY(1.0523) rotate(-300deg)"}}></path>
+    <path d="M55.5002 4.5000 L58.5005 2.5000 L61.0002 3.5000 L63.5002 7.0000 L56.6511 48.1620 L52.0005 45.0000 L50.0005 39.5000 L53.5003 8.5000 L55.5002 4.5000 M55.5002 4.5000 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(270deg) scaleY(1.04397) rotate(-270deg)"}}></path>
+    <path d="M23.4253 5.1588 L26.5075 1.2217 L28.5175 0.7632 L32.5063 1.3458 L34.4748 2.8868 L48.8202 34.6902 L54.0089 49.8008 L47.9378 53.1760 L24.8009 11.1886 L23.4253 5.1588 M23.4253 5.1588 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(240deg) scaleY(1.08064) rotate(-240deg)"}}></path>
+    <path d="M8.4990 27.0019 L7.4999 23.0001 L10.5003 19.5001 L14.0003 20.0001 L15.0003 20.0001 L36.0000 35.5000 L42.5000 40.5000 L51.5000 47.5000 L46.5000 56.0000 L42.0002 52.5000 L39.0001 49.5000 L10.0000 29.0001 L8.4990 27.0019 M8.4990 27.0019 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(210deg) scaleY(1.2677) rotate(-210deg)"}}></path>
+    <path d="M2.5003 53.0000 L0.2370 50.5000 L0.2373 48.2759 L2.5003 47.5000 L28.0000 49.0000 L53.0000 51.0000 L52.1885 55.9782 L4.5000 53.5000 L2.5003 53.0000 M2.5003 53.0000 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(180deg) scaleY(1.05103) rotate(-180deg)"}}></path>
+    <path d="M17.5002 79.0264 L12.5005 79.0264 L10.5124 76.7369 L10.5124 74.0000 L19.0005 68.0000 L53.5082 46.0337 L57.0005 52.0000 L17.5002 79.0264 M17.5002 79.0264 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(150deg) scaleY(1.02936) rotate(-150deg)"}}></path>
+    <path d="M27.0004 92.9999 L25.0003 93.4999 L22.0003 91.9999 L22.5004 89.4999 L52.0003 50.5000 L56.0004 55.9999 L34.0003 85.0000 L27.0004 92.9999 M27.0004 92.9999 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(120deg) scaleY(1.015) rotate(-120deg)"}}></path>
+    <path d="M51.9998 98.0000 L50.5002 100.0000 L47.5002 101.0000 L45.0001 99.0000 L43.5000 96.0000 L51.0003 55.4999 L55.5001 55.9999 L51.9998 98.0000 M51.9998 98.0000 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(90deg) scaleY(1.06) rotate(-90deg)"}}></path>
+    <path d="M77.5007 86.9997 L77.5007 90.9997 L77.0006 92.4997 L75.0004 93.4997 L71.5006 93.0339 L47.4669 57.2642 L56.9998 50.0002 L64.9994 64.5004 L65.7507 69.7497 L77.5007 86.9997 M77.5007 86.9997 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(60deg) scaleY(0.97) rotate(-60deg)"}}></path>
+    <path d="M89.0008 80.9991 L89.5008 83.4991 L88.0008 85.4991 L86.5007 84.9991 L78.0007 78.9991 L65.0007 67.4991 L55.0007 60.4991 L58.0000 51.0000 L62.9999 54.0001 L66.0007 59.4991 L89.0008 80.9991 M89.0008 80.9991 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(30deg) scaleY(0.997) rotate(-30deg)"}}></path>
+    <path d="M82.5003 55.5000 L95.0003 56.5000 L98.0003 58.5000 L100.0000 61.5000 L100.0000 63.6587 L94.5003 66.0000 L66.5005 59.0000 L55.0003 58.5000 L58.0000 48.0000 L66.0005 54.0000 L82.5003 55.5000 M82.5003 55.5000 " fill="currentColor" style={{transformOrigin: "50px 50px", transform: "rotate(0deg) scaleY(1.045) rotate(0deg)"}}></path>
   </svg>
 );
 
 export const ClaudeChat: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-white relative overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-         <div className="flex items-center gap-1 text-gray-500 text-lg font-medium cursor-pointer hover:bg-gray-100 px-2 py-1 rounded-lg transition-colors">
-            <span className="text-gray-800">ChatGPT</span>
-            <span className="text-gray-500">5.1 Thinking</span>
-            <ChevronDown size={16} className="text-gray-400" />
-         </div>
-         <div className="flex items-center gap-4">
-            {/* Right side icons if needed */}
-         </div>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center max-w-3xl mx-auto w-full px-4 pb-20">
+      <div className="flex-1 flex flex-col items-center justify-center max-w-3xl mx-auto w-full px-4">
         {/* Greeting / Logo */}
         <div className="flex flex-col items-center gap-6 mb-10">
-          {/* Replaced ClaudeLogo with ChatGPTLogo */}
-          <div className="w-16 h-16 text-gray-800">
-            <ChatGPTLogo className="w-full h-full" />
+          <div className="w-16 h-16 text-[#D97757]">
+            <ClaudeLogo className="w-full h-full" />
           </div>
-          <h1 className="text-3xl font-medium text-gray-800">有什么可以帮忙的？</h1>
+          <h1 className="text-3xl font-serif text-gray-800 font-medium">Good morning, Nature</h1>
         </div>
 
         {/* Input Area */}
         <div className="w-full max-w-2xl relative">
-          <div className="bg-[#f4f4f4] rounded-[2rem] px-4 py-3 flex flex-col gap-2 min-h-[52px]">
-            <input
-              type="text"
-              placeholder="询问任何问题"
-              className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400 text-base px-2"
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:border-gray-300 hover:shadow-md transition-all duration-200 p-4">
+            <textarea
+              placeholder="How can I help you today?"
+              className="w-full resize-none outline-none text-gray-700 placeholder-gray-400 text-lg min-h-[60px] bg-transparent"
+              rows={1}
             />
             
-            <div className="flex items-center justify-between mt-1 px-1">
-              <div className="flex items-center gap-3">
-                <button className="text-gray-500 hover:text-gray-700 transition-colors">
-                  <Plus size={20} />
-                </button>
-                <button className="flex items-center gap-1 text-blue-500 text-sm font-medium hover:bg-blue-50 px-2 py-0.5 rounded-full transition-colors">
-                   <Clock size={14} />
-                   <span>思考</span>
-                   <ChevronDown size={12} />
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-2">
+                <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <Paperclip size={18} />
                 </button>
               </div>
-              <div className="flex items-center gap-3">
-                 <button className="text-gray-500 hover:text-gray-700 transition-colors">
-                    <Mic size={20} />
-                 </button>
-                 <button className="w-8 h-8 bg-[#6941C6] rounded-full flex items-center justify-center text-white hover:opacity-90 transition-opacity">
-                    <AudioLines size={16} />
-                 </button>
-              </div>
+              <button className="p-1.5 bg-[#D97757] text-white rounded-lg hover:bg-[#c56a4c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <ArrowUp size={18} />
+              </button>
             </div>
+          </div>
+          
+          <div className="absolute -bottom-8 right-0 text-xs text-gray-400">
+            Claude 3.5 Sonnet
+          </div>
+        </div>
+
+        {/* Prompt Categories */}
+        <div className="mt-8 w-full max-w-2xl">
+          <div className="flex flex-wrap justify-center gap-2">
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 transition-colors">
+              <Pen size={14} />
+              <span>Write</span>
+            </button>
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 transition-colors">
+              <BookOpen size={14} />
+              <span>Learn</span>
+            </button>
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 transition-colors">
+              <Code size={14} />
+              <span>Code</span>
+            </button>
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 transition-colors">
+              <Heart size={14} />
+              <span>Life stuff</span>
+            </button>
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 transition-colors">
+              <Cloud size={14} />
+              <span>From Drive</span>
+            </button>
           </div>
         </div>
       </div>

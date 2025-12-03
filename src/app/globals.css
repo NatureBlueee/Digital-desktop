@@ -27,40 +27,32 @@ body {
 }
 
 /* 窗口调整大小句柄样式 - Windows 风格 */
-.resize-handle {
-  transition: background-color 0.15s ease;
-  position: absolute;
+.window-resize-handle {
+  position: absolute !important;
+  background-color: transparent !important;
+  transition: background-color 0.15s ease !important;
 }
 
 /* 边缘句柄 - 悬停时显示蓝色高亮 */
-.resize-handle-top,
-.resize-handle-bottom,
-.resize-handle-left,
-.resize-handle-right {
-  background-color: transparent;
+.window-resize-edge:hover {
+  background-color: rgba(59, 130, 246, 0.5) !important;
 }
 
-.resize-handle-top:hover,
-.resize-handle-bottom:hover {
-  background-color: rgba(59, 130, 246, 0.3);
+/* 角落句柄 - 更强的高亮效果 */
+.window-resize-corner:hover {
+  background-color: rgba(59, 130, 246, 0.6) !important;
+  border-radius: 2px;
 }
 
-.resize-handle-left:hover,
-.resize-handle-right:hover {
-  background-color: rgba(59, 130, 246, 0.3);
+/* react-rnd 生成的 resize handle 样式覆盖 */
+[class*="react-resizable-handle"]:hover {
+  background-color: rgba(59, 130, 246, 0.5) !important;
 }
 
-/* 角落句柄 - 更大的交互区域 */
-.resize-handle-corner {
-  background-color: transparent;
-}
-
-.resize-handle-corner:hover {
-  background-color: rgba(59, 130, 246, 0.4);
-}
-
-/* 窗口激活状态下的边框增强 */
-.window-active {
-  outline: 1px solid rgba(59, 130, 246, 0.4);
-  outline-offset: -1px;
+/* 特定方向的句柄优化 */
+.window-resize-handle[style*="cursor: nw-resize"]:hover,
+.window-resize-handle[style*="cursor: ne-resize"]:hover,
+.window-resize-handle[style*="cursor: sw-resize"]:hover,
+.window-resize-handle[style*="cursor: se-resize"]:hover {
+  background-color: rgba(59, 130, 246, 0.6) !important;
 }

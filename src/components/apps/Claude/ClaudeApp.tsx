@@ -55,10 +55,9 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
   return (
     <div 
       ref={containerRef}
-      className="flex flex-col h-full w-full bg-white text-[#333] font-sans relative overflow-hidden drag-handle"
+      className="flex flex-col h-full w-full bg-[#f5f4ef] text-[#333] font-sans relative overflow-hidden rounded-lg border border-gray-200/50 shadow-xl drag-handle"
     >
       {/* Custom Title Bar / Window Controls */}
-      {/* We hide the default title bar in WindowManager, so we build a custom one here that matches Claude's look */}
       <div className="absolute top-0 right-0 z-50 flex items-center gap-2 p-3 drag-handle">
         <button 
           onClick={(e) => { e.stopPropagation(); minimizeWindow(windowId); }}
@@ -80,7 +79,7 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
         </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative pt-0"> {/* pt-0 because sidebar handles its own top spacing or we want full height */}
+      <div className="flex flex-1 overflow-hidden relative pt-0">
         <ClaudeSidebar 
           isCollapsed={isSidebarCollapsed} 
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -89,7 +88,6 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
         />
         
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white rounded-tl-2xl shadow-[0_0_15px_rgba(0,0,0,0.03)] border-l border-gray-100/50 ml-[-1px] z-10 relative">
-           {/* The main content area has a rounded top-left corner to simulate the paper-like effect */}
            {renderContent()}
         </main>
       </div>
