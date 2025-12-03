@@ -53,6 +53,7 @@ export const useDesktopStore = create<DesktopState>((set) => ({
     { id: 'control-panel', title: '控制面板', icon: 'https://img.icons8.com/fluency/96/control-panel.png', x: 0, y: 7, type: 'app', appId: 'control-panel', shortcut: true },
     { id: 'cursor', title: 'Cursor', icon: 'https://www.cursor.com/assets/images/logo.svg', x: 0, y: 8, type: 'app', appId: 'cursor', shortcut: true },
     { id: 'claude', title: 'Claude', icon: 'https://upload.wikimedia.org/wikipedia/commons/7/77/Claude_AI_logo.svg', x: 0, y: 9, type: 'app', appId: 'claude', shortcut: true },
+    { id: 'chatgpt', title: 'ChatGPT', icon: 'https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg', x: 0, y: 10, type: 'app', appId: 'chatgpt', shortcut: true },
     { id: 'new-folder', title: '新建文件夹', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 1, y: 0, type: 'folder' },
   ],
   selectedIconIds: [],
