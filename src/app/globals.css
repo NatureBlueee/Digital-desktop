@@ -25,3 +25,34 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* 窗口调整大小句柄样式 - Windows 风格 */
+.window-resize-handle {
+  position: absolute !important;
+  background-color: transparent !important;
+  transition: background-color 0.15s ease !important;
+}
+
+/* 边缘句柄 - 悬停时显示蓝色高亮 */
+.window-resize-edge:hover {
+  background-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+/* 角落句柄 - 更强的高亮效果 */
+.window-resize-corner:hover {
+  background-color: rgba(59, 130, 246, 0.6) !important;
+  border-radius: 2px;
+}
+
+/* react-rnd 生成的 resize handle 样式覆盖 */
+[class*="react-resizable-handle"]:hover {
+  background-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+/* 特定方向的句柄优化 */
+.window-resize-handle[style*="cursor: nw-resize"]:hover,
+.window-resize-handle[style*="cursor: ne-resize"]:hover,
+.window-resize-handle[style*="cursor: sw-resize"]:hover,
+.window-resize-handle[style*="cursor: se-resize"]:hover {
+  background-color: rgba(59, 130, 246, 0.6) !important;
+}

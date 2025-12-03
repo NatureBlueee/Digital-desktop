@@ -33,14 +33,88 @@ export default function WindowManager() {
                 topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
             }}
             resizeHandleStyles={{
-                top: { height: '10px', top: '-5px', cursor: 'ns-resize' },
-                bottom: { height: '10px', bottom: '-5px', cursor: 'ns-resize' },
-                left: { width: '10px', left: '-5px', cursor: 'ew-resize' },
-                right: { width: '10px', right: '-5px', cursor: 'ew-resize' },
-                topRight: { width: '20px', height: '20px', right: '-10px', top: '-10px', cursor: 'ne-resize' },
-                topLeft: { width: '20px', height: '20px', left: '-10px', top: '-10px', cursor: 'nw-resize' },
-                bottomRight: { width: '20px', height: '20px', right: '-10px', bottom: '-10px', cursor: 'se-resize' },
-                bottomLeft: { width: '20px', height: '20px', left: '-10px', bottom: '-10px', cursor: 'sw-resize' },
+                top: {
+                  height: '6px',
+                  top: '0px',
+                  cursor: 'ns-resize',
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+                bottom: {
+                  height: '6px',
+                  bottom: '0px',
+                  cursor: 'ns-resize',
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+                left: {
+                  width: '6px',
+                  left: '0px',
+                  cursor: 'ew-resize',
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+                right: {
+                  width: '6px',
+                  right: '0px',
+                  cursor: 'ew-resize',
+                  zIndex: 10,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+                topRight: {
+                  width: '12px',
+                  height: '12px',
+                  right: '0px',
+                  top: '0px',
+                  cursor: 'ne-resize',
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+                topLeft: {
+                  width: '12px',
+                  height: '12px',
+                  left: '0px',
+                  top: '0px',
+                  cursor: 'nw-resize',
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+                bottomRight: {
+                  width: '12px',
+                  height: '12px',
+                  right: '0px',
+                  bottom: '0px',
+                  cursor: 'se-resize',
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+                bottomLeft: {
+                  width: '12px',
+                  height: '12px',
+                  left: '0px',
+                  bottom: '0px',
+                  cursor: 'sw-resize',
+                  zIndex: 20,
+                  background: 'transparent',
+                  transition: 'background-color 0.2s ease'
+                },
+            }}
+            resizeHandleClasses={{
+                top: 'window-resize-handle window-resize-edge',
+                bottom: 'window-resize-handle window-resize-edge',
+                left: 'window-resize-handle window-resize-edge',
+                right: 'window-resize-handle window-resize-edge',
+                topRight: 'window-resize-handle window-resize-corner',
+                topLeft: 'window-resize-handle window-resize-corner',
+                bottomRight: 'window-resize-handle window-resize-corner',
+                bottomLeft: 'window-resize-handle window-resize-corner',
             }}
             style={{ zIndex: window.zIndex }}
             onMouseDown={() => focusWindow(window.id)}
