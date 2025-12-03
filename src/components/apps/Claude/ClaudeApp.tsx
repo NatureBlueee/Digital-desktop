@@ -55,7 +55,7 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
   return (
     <div 
       ref={containerRef}
-      className="flex flex-col h-full w-full bg-[#f5f4ef] text-[#333] font-sans relative overflow-hidden rounded-lg border border-gray-200/50 shadow-xl"
+      className="flex flex-col h-full w-full bg-white text-[#333] font-sans relative overflow-hidden drag-handle"
     >
       {/* Custom Title Bar / Window Controls */}
       {/* We hide the default title bar in WindowManager, so we build a custom one here that matches Claude's look */}
