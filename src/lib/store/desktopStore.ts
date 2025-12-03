@@ -54,7 +54,8 @@ export const useDesktopStore = create<DesktopState>((set) => ({
     { id: 'control-panel', title: '控制面板', icon: 'https://img.icons8.com/fluency/96/control-panel.png', x: 1, y: 1, type: 'app', appId: 'control-panel', shortcut: true },
     { id: 'cursor', title: 'Cursor', icon: '/icons/cursor-ai-code-icon.svg', x: 1, y: 2, type: 'app', appId: 'cursor', shortcut: true },
     { id: 'claude', title: 'Claude', icon: '/icons/claude-ai-icon.svg', x: 1, y: 3, type: 'app', appId: 'claude', shortcut: true },
-    { id: 'new-folder', title: '新建文件夹', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 1, y: 4, type: 'folder' },
+    { id: 'chatgpt', title: 'ChatGPT', icon: '/icons/chatgpt-icon.svg', x: 1, y: 4, type: 'app', appId: 'chatgpt', shortcut: true },
+    { id: 'new-folder', title: '新建文件夹', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 2, y: 0, type: 'folder' },
   ],
   pinnedApps: [
     { id: 'start', icon: 'https://img.icons8.com/fluency/96/windows-11.png', title: 'Start' },

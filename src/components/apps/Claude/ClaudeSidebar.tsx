@@ -1,7 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { NewChatIcon, ChatsIcon, ProjectsIcon, ArtifactsIcon, CodeIcon } from './ClaudeIcons';
-import { PanelLeft, Star, ChevronDown } from 'lucide-react';
+import { PanelLeft, SquarePen, Search, Library, History, LayoutGrid, Folder, CheckCircle2, Ship, Palette, Briefcase, Globe } from 'lucide-react';
 
 interface ClaudeSidebarProps {
   isCollapsed: boolean;
@@ -17,58 +16,64 @@ export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
   onViewChange,
 }) => {
   const navItems = [
-    { id: 'chat', label: 'New chat', icon: NewChatIcon, action: () => onViewChange('chat') },
-    { id: 'recents', label: 'Chats', icon: ChatsIcon, action: () => onViewChange('chat') }, // Maps to chat view for now
-    { id: 'projects', label: 'Projects', icon: ProjectsIcon, action: () => onViewChange('projects') },
-    { id: 'artifacts', label: 'Artifacts', icon: ArtifactsIcon, action: () => onViewChange('artifacts') },
-    { id: 'code', label: 'Code', icon: CodeIcon, action: () => onViewChange('code') },
+    { id: 'chat', label: '新聊天', icon: SquarePen, action: () => onViewChange('chat') },
+    { id: 'search', label: '搜索聊天', icon: Search, action: () => onViewChange('chat') },
+    { id: 'library', label: '库', icon: Library, action: () => onViewChange('artifacts') },
+    { id: 'codex', label: 'Codex', icon: History, action: () => onViewChange('code') },
   ];
 
-  const recentChats = [
-    "数据所有权与AI时代的web3想象",
-    "塔罗牌解读关系能量",
-    "AI素养与Z世代反向管理研究",
-    "数字艺术中的灵韵缺失",
-    "捕捉真实个性的提示词优化",
-    "写作作为逃离与凝视"
+  const gptItems = [
+    { label: '探索', icon: LayoutGrid },
+    { label: 'Resume/CV', icon: CheckCircle2, color: 'text-blue-500' },
+    { label: 'Midjourney | v7.0 | USE', icon: Ship, color: 'text-gray-700' },
+    { label: '微信公众号封面设计师', icon: Palette, color: 'text-orange-500' },
   ];
 
-  const starredChats = [
-    "wowok理解不错",
-    "人机协作",
-    "英语"
+  const projectItems = [
+    { label: '新项目', icon: Folder },
+    { label: 'WoWok', icon: Folder },
+    { label: 'NEU简历', icon: Briefcase, color: 'text-blue-500' },
+    { label: '配色设计', icon: Palette, color: 'text-pink-500' },
   ];
 
   return (
     <nav
       className={cn(
-        "flex flex-col h-full bg-[#f5f4ef] border-r border-[#e5e5e5] transition-all duration-300 ease-in-out relative z-20",
+        "flex flex-col h-full bg-[#f9f9f9] transition-all duration-300 ease-in-out relative z-20 pt-2",
         isCollapsed ? "w-[60px]" : "w-[260px]"
       )}
     >
-      {/* Toggle Button */}
-      <div className="p-3 flex items-center justify-start">
+      {/* Header */}
+      <div className="px-3 mb-2 flex items-center justify-between">
+        {!isCollapsed && (
+             <div className="flex items-center gap-2 px-2 py-2 hover:bg-gray-200/50 rounded-lg cursor-pointer transition-colors">
+                <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center">
+                    <Globe size={14} className="text-gray-600" />
+                </div>
+                <span className="font-medium text-gray-700">ChatGPT</span>
+             </div>
+        )}
         <button
           onClick={toggleSidebar}
-          className="p-2 hover:bg-[#e5e4df] rounded-md text-gray-500 hover:text-gray-900 transition-colors"
+          className="p-2 hover:bg-gray-200 rounded-md text-gray-500 hover:text-gray-900 transition-colors"
         >
           <PanelLeft size={20} />
         </button>
       </div>
 
       {/* Main Navigation */}
-      <div className="flex flex-col px-3 gap-1">
+      <div className="flex flex-col px-2 gap-0.5">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={item.action}
             className={cn(
-              "flex items-center gap-3 p-2 rounded-lg text-sm font-medium transition-colors group",
-              activeView === item.id ? "bg-[#e5e4df] text-gray-900" : "text-gray-600 hover:bg-[#e5e4df] hover:text-gray-900"
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group text-gray-700 hover:bg-gray-200/60",
+              activeView === item.id && "bg-gray-200/60"
             )}
             title={isCollapsed ? item.label : undefined}
           >
-            <item.icon className={cn("shrink-0 text-gray-500 group-hover:text-gray-900", activeView === item.id && "text-gray-900")} />
+            <item.icon size={18} className="shrink-0 text-gray-600" />
             {!isCollapsed && (
               <span className="truncate opacity-100 transition-opacity duration-200">
                 {item.label}
@@ -78,36 +83,33 @@ export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
         ))}
       </div>
 
-      {/* Scrollable Content (Recents & Starred) */}
+      {/* Scrollable Content */}
       {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden mt-4 px-3 pb-4">
-          {/* Starred */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between px-2 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              <span>Starred</span>
-            </div>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden mt-4 px-4 pb-4 space-y-6">
+          {/* GPT Section */}
+          <div>
+            <div className="text-xs font-medium text-gray-400 mb-2 px-1">GPT</div>
             <ul className="space-y-0.5">
-              {starredChats.map((chat, i) => (
+              {gptItems.map((item, i) => (
                 <li key={i}>
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
-                    <span className="truncate flex-1">{chat}</span>
+                  <button className="w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-200/60 text-left truncate group">
+                    <item.icon size={16} className={cn("shrink-0", item.color || "text-gray-500")} />
+                    <span className="truncate flex-1">{item.label}</span>
                   </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Recents */}
+          {/* Projects Section */}
           <div>
-            <div className="flex items-center justify-between px-2 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider group cursor-pointer">
-              <span>Recents</span>
-              <span className="opacity-0 group-hover:opacity-100 text-[10px]">Hide</span>
-            </div>
+            <div className="text-xs font-medium text-gray-400 mb-2 px-1">项目</div>
             <ul className="space-y-0.5">
-              {recentChats.map((chat, i) => (
+              {projectItems.map((item, i) => (
                 <li key={i}>
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
-                    <span className="truncate flex-1">{chat}</span>
+                  <button className="w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-200/60 text-left truncate group">
+                    <item.icon size={16} className={cn("shrink-0", item.color || "text-gray-500")} />
+                    <span className="truncate flex-1">{item.label}</span>
                   </button>
                 </li>
               ))}
@@ -117,18 +119,18 @@ export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
       )}
 
       {/* User Profile (Bottom) */}
-      <div className="mt-auto p-3 border-t border-[#e5e5e5]">
+      <div className="mt-auto p-3">
         <button className={cn(
-          "flex items-center gap-3 w-full p-2 rounded-lg hover:bg-[#e5e4df] transition-colors text-left",
+          "flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-200/60 transition-colors text-left",
           isCollapsed && "justify-center px-0"
         )}>
-          <div className="w-8 h-8 rounded-full bg-orange-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
-            N
+          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full bg-gray-100" />
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">Nature</div>
-              <div className="text-xs text-gray-500 truncate">Pro plan</div>
+              <div className="text-sm font-medium text-gray-900 truncate">张晨曦</div>
+              <div className="text-xs text-gray-500 truncate">Plus</div>
             </div>
           )}
         </button>
