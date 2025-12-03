@@ -32,14 +32,72 @@ export default function WindowManager() {
                 topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
             }}
             resizeHandleStyles={{
-                top: { height: '10px', top: '-5px', cursor: 'ns-resize' },
-                bottom: { height: '10px', bottom: '-5px', cursor: 'ns-resize' },
-                left: { width: '10px', left: '-5px', cursor: 'ew-resize' },
-                right: { width: '10px', right: '-5px', cursor: 'ew-resize' },
-                topRight: { width: '20px', height: '20px', right: '-10px', top: '-10px', cursor: 'ne-resize' },
-                topLeft: { width: '20px', height: '20px', left: '-10px', top: '-10px', cursor: 'nw-resize' },
-                bottomRight: { width: '20px', height: '20px', right: '-10px', bottom: '-10px', cursor: 'se-resize' },
-                bottomLeft: { width: '20px', height: '20px', left: '-10px', bottom: '-10px', cursor: 'sw-resize' },
+                top: {
+                  height: '8px',
+                  top: '0px',
+                  cursor: 'ns-resize',
+                  zIndex: 10
+                },
+                bottom: {
+                  height: '8px',
+                  bottom: '0px',
+                  cursor: 'ns-resize',
+                  zIndex: 10
+                },
+                left: {
+                  width: '8px',
+                  left: '0px',
+                  cursor: 'ew-resize',
+                  zIndex: 10
+                },
+                right: {
+                  width: '8px',
+                  right: '0px',
+                  cursor: 'ew-resize',
+                  zIndex: 10
+                },
+                topRight: {
+                  width: '16px',
+                  height: '16px',
+                  right: '0px',
+                  top: '0px',
+                  cursor: 'ne-resize',
+                  zIndex: 20
+                },
+                topLeft: {
+                  width: '16px',
+                  height: '16px',
+                  left: '0px',
+                  top: '0px',
+                  cursor: 'nw-resize',
+                  zIndex: 20
+                },
+                bottomRight: {
+                  width: '16px',
+                  height: '16px',
+                  right: '0px',
+                  bottom: '0px',
+                  cursor: 'se-resize',
+                  zIndex: 20
+                },
+                bottomLeft: {
+                  width: '16px',
+                  height: '16px',
+                  left: '0px',
+                  bottom: '0px',
+                  cursor: 'sw-resize',
+                  zIndex: 20
+                },
+            }}
+            resizeHandleClasses={{
+                top: 'resize-handle resize-handle-top',
+                bottom: 'resize-handle resize-handle-bottom',
+                left: 'resize-handle resize-handle-left',
+                right: 'resize-handle resize-handle-right',
+                topRight: 'resize-handle resize-handle-corner',
+                topLeft: 'resize-handle resize-handle-corner',
+                bottomRight: 'resize-handle resize-handle-corner',
+                bottomLeft: 'resize-handle resize-handle-corner',
             }}
             style={{ zIndex: window.zIndex }}
             onMouseDown={() => focusWindow(window.id)}

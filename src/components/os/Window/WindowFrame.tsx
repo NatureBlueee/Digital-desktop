@@ -26,10 +26,12 @@ export default function WindowFrame({
   hideTitleBar
 }: WindowFrameProps) {
   return (
-    <div 
+    <div
       className={cn(
-        "flex flex-col h-full w-full rounded-lg overflow-hidden border transition-shadow duration-200 pointer-events-auto",
-        isActive ? "shadow-2xl border-black/10" : "shadow-md border-black/5 opacity-90"
+        "flex flex-col h-full w-full rounded-lg overflow-hidden transition-all duration-200 pointer-events-auto",
+        isActive
+          ? "shadow-2xl border-2 border-blue-400/40"
+          : "shadow-md border border-black/5 opacity-90"
       )}
       onClick={onFocus}
     >

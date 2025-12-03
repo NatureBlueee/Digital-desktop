@@ -25,3 +25,42 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* 窗口调整大小句柄样式 - Windows 风格 */
+.resize-handle {
+  transition: background-color 0.15s ease;
+  position: absolute;
+}
+
+/* 边缘句柄 - 悬停时显示蓝色高亮 */
+.resize-handle-top,
+.resize-handle-bottom,
+.resize-handle-left,
+.resize-handle-right {
+  background-color: transparent;
+}
+
+.resize-handle-top:hover,
+.resize-handle-bottom:hover {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+.resize-handle-left:hover,
+.resize-handle-right:hover {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+/* 角落句柄 - 更大的交互区域 */
+.resize-handle-corner {
+  background-color: transparent;
+}
+
+.resize-handle-corner:hover {
+  background-color: rgba(59, 130, 246, 0.4);
+}
+
+/* 窗口激活状态下的边框增强 */
+.window-active {
+  outline: 1px solid rgba(59, 130, 246, 0.4);
+  outline-offset: -1px;
+}
