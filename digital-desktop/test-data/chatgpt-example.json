@@ -1,0 +1,46 @@
+[
+  {
+    "id": "conv-001",
+    "title": "关于Digital Desktop项目的讨论",
+    "create_time": 1701234567,
+    "messages": [
+      {
+        "role": "user",
+        "content": "我有一个创意网站的构想，想做一个数字桌面...",
+        "timestamp": "2024-12-01T10:00:00Z"
+      },
+      {
+        "role": "assistant",
+        "content": "这是个非常有意思的想法！让我帮你分析一下...",
+        "timestamp": "2024-12-01T10:01:00Z"
+      },
+      {
+        "role": "user",
+        "content": "那我们如何规划架构呢？",
+        "timestamp": "2024-12-01T10:05:00Z"
+      },
+      {
+        "role": "assistant",
+        "content": "我建议采用三层架构：数据层、容器层和应用层...",
+        "timestamp": "2024-12-01T10:06:00Z"
+      }
+    ]
+  },
+  {
+    "id": "conv-002",
+    "title": "Next.js和React最佳实践",
+    "create_time": 1701220000,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Next.js 16有什么新特性？",
+        "timestamp": "2024-12-01T08:00:00Z"
+      },
+      {
+        "role": "assistant",
+        "content": "Next.js 16主要更新包括：React 19支持、改进的App Router...",
+        "timestamp": "2024-12-01T08:01:00Z"
+      }
+    ]
+  }
+]
