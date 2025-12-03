@@ -4,7 +4,7 @@ import WindowManager from "@/components/os/Window/WindowManager";
 
 export default function Home() {
   return (
-    <main className="h-screen w-screen overflow-hidden bg-[url('https://4kwallpapers.com/images/wallpapers/windows-11-stock-official-white-background-light-theme-3840x2160-5629.jpg')] bg-cover bg-center relative select-none">
+    <main className="h-screen w-screen overflow-hidden bg-[url('https://4kwallpapers.com/images/wallpapers/windows-11-dark-mode-blue-stock-official-3840x2160-5630.jpg')] bg-cover bg-center relative select-none">
       {/* Desktop Layer */}
       <div className="absolute inset-0 z-0">
         <DesktopGrid />

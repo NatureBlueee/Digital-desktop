@@ -60,16 +60,21 @@ export default function DesktopIcon({
         onDoubleClick();
       }}
     >
-      <div className="w-12 h-12 flex items-center justify-center drop-shadow-sm transition-transform group-hover:scale-105">
+      <div className="w-10 h-10 flex items-center justify-center drop-shadow-sm transition-transform group-hover:scale-105 relative">
         {isUrl ? (
             <img src={icon.icon} alt={icon.title} className="w-full h-full object-contain" draggable={false} />
         ) : (
-            IconComponent && <IconComponent size={32} strokeWidth={1.5} className="text-blue-400" />
+            IconComponent && <IconComponent size={28} strokeWidth={1.5} className="text-blue-400" />
+        )}
+        {icon.shortcut && (
+            <div className="absolute bottom-0 left-0 w-3.5 h-3.5 bg-white rounded-sm shadow-sm flex items-center justify-center">
+                <img src="https://img.icons8.com/material-rounded/24/000000/forward-arrow.png" alt="shortcut" className="w-2.5 h-2.5 opacity-60 -rotate-45" />
+            </div>
         )}
       </div>
       <span
         className={cn(
-          "text-xs text-white text-center px-1 rounded-sm line-clamp-2 drop-shadow-md select-none",
+          "text-[11px] text-white text-center px-1 rounded-sm line-clamp-2 drop-shadow-md select-none max-w-[72px] leading-tight break-words",
           selected ? "bg-blue-600/80" : "group-hover:text-white"
         )}
         style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
