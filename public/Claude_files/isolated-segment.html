@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)https://a.claude.ai/isolated-segment.html?v=c0124e946a -->
+<html lang="en"><div id="in-page-channel-node-id" data-channel-name="in_page_channel_xWOPQd"></div><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <script src="./468742119653388" async=""></script><script type="text/javascript" async="" src="./fbevents.js.下载"></script><script type="text/javascript" src="./commons.59560acdd69ed701c941.js.gz" async="" status="loaded"></script><script type="text/javascript" src="./doubleclick-floodlight.dynamic.js.gz" async="" status="loaded"></script><script type="text/javascript" src="./facebook-pixel.dynamic.js.gz" async="" status="loaded"></script><script type="text/javascript" async="" data-global-segment-analytics-key="analytics" src="./analytics.min.js.下载"></script><script>
+      // This script is copied from Segment's official snippet:
+      // https://segment.com/docs/connections/sources/catalog/libraries/website/javascript/quickstart/
+      // With the following changes:
+      // 1. Removed the default analytics.load method so that we can rewrite the cdnHostname
+      // 2. Removed un-used methods from analytics.methods
+      !(function () {
+        var i = "analytics",
+          analytics = (window[i] = window[i] || []);
+        if (!analytics.initialize)
+          if (analytics.invoked)
+            window.console &&
+              console.error &&
+              console.error("Segment snippet included twice.");
+          else {
+            analytics.invoked = !0;
+            analytics.methods = ["identify", "track", "ready"];
+            analytics.factory = function (e) {
+              return function () {
+                if (window[i].initialized)
+                  return window[i][e].apply(window[i], arguments);
+                var n = Array.prototype.slice.call(arguments);
+                if (["track", "identify"].indexOf(e) > -1) {
+                  var c = document.querySelector("link[rel='canonical']");
+                  n.push({
+                    __t: "bpc",
+                    c: (c && c.getAttribute("href")) || void 0,
+                    p: location.pathname,
+                    u: location.href,
+                    s: location.search,
+                    t: document.title,
+                    r: document.referrer,
+                  });
+                }
+                n.unshift(e);
+                analytics.push(n);
+                return analytics;
+              };
+            };
+            for (var n = 0; n < analytics.methods.length; n++) {
+              var key = analytics.methods[n];
+              analytics[key] = analytics.factory(key);
+            }
+            analytics.SNIPPET_VERSION = "5.2.1";
+          }
+      })();
+    </script>
+    <script>
+      (function () {
+        // Debug logging function
+        function logDebug(message, ...args) {
+          console.debug("[IsolatedSegment]", message, ...args);
+        }
+
+        // Keep sending ready message until we get init response
+        let readyInterval = null;
+
+        // Create isolated segment object on window
+        window.isolatedSegment = {
+          initialized: false,
+          writeKey: null,
+          segmentCdnHost: null,
+
+          // Initialize the isolated segment instance
+          init: function (writeKey, segmentCdnHost) {
+            logDebug("init called", {
+              writeKey: writeKey?.substring(0, 10) + "...",
+              segmentCdnHost,
+              alreadyInitialized: this.initialized,
+            });
+
+            if (this.initialized) {
+              logDebug("Already initialized, skipping");
+              return;
+            }
+
+            this.writeKey = writeKey;
+            this.segmentCdnHost = segmentCdnHost;
+
+            try {
+              logDebug("Loading analytics via analytics.js");
+
+              // Set custom CDN host if provided
+              if (segmentCdnHost) {
+                // Override the analytics.load function to use custom CDN
+                const originalLoad = window.analytics.load;
+                window.analytics.load = function (key, options) {
+                  const script = document.createElement("script");
+                  script.type = "text/javascript";
+                  script.async = true;
+                  script.setAttribute(
+                    "data-global-segment-analytics-key",
+                    "analytics",
+                  );
+                  script.src =
+                    "https://" +
+                    segmentCdnHost +
+                    "/analytics.js/v1/" +
+                    key +
+                    "/analytics.min.js";
+                  const firstScript =
+                    document.getElementsByTagName("script")[0];
+                  firstScript.parentNode.insertBefore(script, firstScript);
+                  window.analytics._loadOptions = options;
+                };
+              }
+
+              // Configure analytics options
+              const loadOptions = {
+                integrations: {
+                  All: false,
+                  "Segment.io": false, // Disable default Segment destination
+                  "Facebook Pixel": true, // Enable FB Pixel destination
+                  "DoubleClick Floodlight": true, // Enable Floodlight destination
+                },
+              };
+
+              // Load analytics
+              window.analytics.load(writeKey, loadOptions);
+
+              this.initialized = true;
+              logDebug("Analytics loaded successfully", {
+                hasAnalytics: !!window.analytics,
+              });
+
+              // Clear the ready interval
+              if (readyInterval) {
+                clearInterval(readyInterval);
+                readyInterval = null;
+              }
+
+              // Send confirmation back to parent
+              this.sendMessage({
+                type: "segment_initialized",
+                success: true,
+              });
+            } catch (error) {
+              logDebug("Failed to initialize analytics", {
+                error: error.message,
+              });
+              this.sendMessage({
+                type: "segment_initialized",
+                success: false,
+                error: error.message,
+              });
+            }
+          },
+
+          track: async function (event, properties, options) {
+            logDebug("track called", {
+              event,
+              properties,
+              initialized: this.initialized,
+              hasAnalytics: !!window.analytics,
+            });
+
+            if (!this.initialized || !window.analytics) {
+              logDebug("Track skipped - not initialized or no analytics");
+              return;
+            }
+
+            await window.analytics.track(
+              event,
+              properties || {},
+              options || {},
+            );
+            logDebug("Track completed", { event });
+          },
+
+          identify: async function (userId, traits, options) {
+            logDebug("identify called", {
+              userId,
+              traits,
+              initialized: this.initialized,
+              hasAnalytics: !!window.analytics,
+            });
+
+            if (!this.initialized || !window.analytics) {
+              logDebug("Identify skipped - not initialized or no analytics");
+              return;
+            }
+
+            await window.analytics.identify(
+              userId,
+              traits || {},
+              options || {},
+            );
+            logDebug("Identify completed", { userId });
+          },
+
+          // Send messages to parent window
+          sendMessage: function (data) {
+            // Only log sendMessage for non-ready messages after initialization
+            if (data.type !== "iframe_ready") {
+              logDebug("sendMessage called", { data });
+            }
+            if (window.parent && window.parent !== window) {
+              try {
+                window.parent.postMessage(
+                  {
+                    source: "isolated-segment",
+                    ...data,
+                  },
+                  "*",
+                );
+                if (data.type !== "iframe_ready") {
+                  logDebug("Message sent to parent", { type: data.type });
+                }
+              } catch (error) {
+                logDebug("Failed to send message to parent", { error });
+              }
+            }
+          },
+        };
+
+        // Listen for messages from parent
+        function handleMessage(event) {
+          // Security check: validate the origin is from the same base domain
+          // Allow both same-origin (for localhost) and parent domain (for a.subdomain setup)
+          const currentOrigin = window.location.origin;
+          const currentHostname = window.location.hostname;
+          const eventHostname = new URL(event.origin).hostname;
+
+          // Extract base domain (remove 'a.' prefix if present)
+          const baseDomain = currentHostname.startsWith("a.")
+            ? currentHostname.substring(2)
+            : currentHostname;
+          const eventBaseDomain = eventHostname.startsWith("a.")
+            ? eventHostname.substring(2)
+            : eventHostname;
+
+          // Allow messages from same origin or from parent domain
+          const isValidOrigin =
+            event.origin === currentOrigin || eventBaseDomain === baseDomain;
+
+          if (!isValidOrigin) {
+            logDebug("Message rejected - invalid origin", {
+              expected: currentOrigin,
+              expectedBaseDomain: baseDomain,
+              received: event.origin,
+              receivedBaseDomain: eventBaseDomain,
+            });
+            return;
+          }
+
+          logDebug("Message received from parent", {
+            origin: event.origin,
+            data: event.data,
+          });
+
+          const data = event.data;
+
+          if (data.target !== "isolated-segment") {
+            logDebug("Message not for isolated-segment, ignoring", {
+              target: data.target,
+            });
+            return;
+          }
+
+          logDebug("Processing message", { type: data.type });
+
+          switch (data.type) {
+            case "init":
+              // Don't log before init is called
+              window.isolatedSegment.init(data.writeKey, data.cdnHost);
+              break;
+
+            case "track":
+              logDebug("Handling track message", { event: data.event });
+              window.isolatedSegment.track(
+                data.event,
+                data.properties,
+                data.options,
+              );
+              break;
+
+            case "identify":
+              logDebug("Handling identify message", { userId: data.userId });
+              window.isolatedSegment.identify(data.userId, data.traits);
+              break;
+
+            default:
+              logDebug("Unknown message type", { type: data.type });
+              break;
+          }
+        }
+
+        window.addEventListener("message", handleMessage);
+
+        function sendReadyMessage() {
+          logDebug("Sending iframe_ready message");
+          if (!window.isolatedSegment.initialized) {
+            window.isolatedSegment.sendMessage({
+              type: "iframe_ready",
+              timestamp: new Date().toISOString(),
+            });
+          } else if (readyInterval) {
+            clearInterval(readyInterval);
+            readyInterval = null;
+          }
+        }
+
+        // Notify parent that iframe is ready after DOM is loaded
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", function () {
+            sendReadyMessage();
+            // Keep sending every 500ms until initialized
+            readyInterval = setInterval(sendReadyMessage, 500);
+          });
+        } else {
+          // DOM is already loaded
+          sendReadyMessage();
+          // Keep sending every 500ms until initialized
+          readyInterval = setInterval(sendReadyMessage, 500);
+        }
+      })();
+    </script>
+  <style data-id="immersive-translate-input-injected-css">.immersive-translate-input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 2147483647;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.immersive-translate-attach-loading::after {
+  content: " ";
+
+  --loading-color: #f78fb6;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: block;
+  margin: 12px auto;
+  position: relative;
+  color: white;
+  left: -100px;
+  box-sizing: border-box;
+  animation: immersiveTranslateShadowRolling 1.5s linear infinite;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-2000%, -50%);
+  z-index: 100;
+}
+
+.immersive-translate-loading-spinner {
+  vertical-align: middle !important;
+  width: 10px !important;
+  height: 10px !important;
+  display: inline-block !important;
+  margin: 0 4px !important;
+  border: 2px rgba(221, 244, 255, 0.6) solid !important;
+  border-top: 2px rgba(0, 0, 0, 0.375) solid !important;
+  border-left: 2px rgba(0, 0, 0, 0.375) solid !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  -webkit-animation: immersive-translate-loading-animation 0.6s infinite linear !important;
+  animation: immersive-translate-loading-animation 0.6s infinite linear !important;
+}
+
+@-webkit-keyframes immersive-translate-loading-animation {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+
+  to {
+    -webkit-transform: rotate(359deg);
+  }
+}
+
+@keyframes immersive-translate-loading-animation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+.immersive-translate-input-loading {
+  --loading-color: #f78fb6;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: block;
+  margin: 12px auto;
+  position: relative;
+  color: white;
+  left: -100px;
+  box-sizing: border-box;
+  animation: immersiveTranslateShadowRolling 1.5s linear infinite;
+}
+
+@keyframes immersiveTranslateShadowRolling {
+  0% {
+    box-shadow: 0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0),
+      0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  12% {
+    box-shadow: 100px 0 var(--loading-color), 0px 0 rgba(255, 255, 255, 0),
+      0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  25% {
+    box-shadow: 110px 0 var(--loading-color), 100px 0 var(--loading-color),
+      0px 0 rgba(255, 255, 255, 0), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  36% {
+    box-shadow: 120px 0 var(--loading-color), 110px 0 var(--loading-color),
+      100px 0 var(--loading-color), 0px 0 rgba(255, 255, 255, 0);
+  }
+
+  50% {
+    box-shadow: 130px 0 var(--loading-color), 120px 0 var(--loading-color),
+      110px 0 var(--loading-color), 100px 0 var(--loading-color);
+  }
+
+  62% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 130px 0 var(--loading-color),
+      120px 0 var(--loading-color), 110px 0 var(--loading-color);
+  }
+
+  75% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0),
+      130px 0 var(--loading-color), 120px 0 var(--loading-color);
+  }
+
+  87% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0),
+      200px 0 rgba(255, 255, 255, 0), 130px 0 var(--loading-color);
+  }
+
+  100% {
+    box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0),
+      200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.immersive-translate-toast {
+  display: flex;
+  position: fixed;
+  z-index: 2147483647;
+  left: 0;
+  right: 0;
+  top: 1%;
+  width: fit-content;
+  padding: 12px 20px;
+  margin: auto;
+  overflow: auto;
+  background: #fef6f9;
+  box-shadow: 0px 4px 10px 0px rgba(0, 10, 30, 0.06);
+  font-size: 15px;
+  border-radius: 8px;
+  color: #333;
+}
+
+.immersive-translate-toast-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.immersive-translate-toast-hidden {
+  margin: 0 20px 0 72px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.immersive-translate-toast-close {
+  color: #666666;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+@media screen and (max-width: 768px) {
+  .immersive-translate-toast {
+    top: 0;
+    padding: 12px 0px 0 10px;
+  }
+  .immersive-translate-toast-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .immersive-translate-toast-hidden {
+    margin: 10px auto;
+  }
+}
+
+.immersive-translate-dialog {
+  position: fixed;
+  z-index: 2147483647;
+  left: 0;
+  top: 0;
+  display: flex;
+  width: 300px;
+  flex-direction: column;
+  align-items: center;
+  font-size: 15px;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  height: fit-content;
+  border-radius: 20px;
+  background-color: #fff;
+}
+
+.immersive-translate-modal {
+  display: none;
+  position: fixed;
+  z-index: 2147483647;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
+  font-size: 15px;
+}
+
+.immersive-translate-modal-content {
+  background-color: #fefefe;
+  margin: 10% auto;
+  padding: 40px 24px 24px;
+  border-radius: 12px;
+  width: 350px;
+  font-family: system-ui, -apple-system, "Segoe UI", "Roboto", "Ubuntu",
+    "Cantarell", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  position: relative;
+}
+
+@media screen and (max-width: 768px) {
+  .immersive-translate-modal-content {
+    margin: 25% auto !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .immersive-translate-modal-content {
+    width: 80vw !important;
+    margin: 20vh auto !important;
+    padding: 20px 12px 12px !important;
+  }
+
+  .immersive-translate-modal-title {
+    font-size: 14px !important;
+  }
+
+  .immersive-translate-modal-body {
+    font-size: 13px !important;
+    max-height: 60vh !important;
+  }
+
+  .immersive-translate-btn {
+    font-size: 13px !important;
+    padding: 8px 16px !important;
+    margin: 0 4px !important;
+  }
+
+  .immersive-translate-modal-footer {
+    gap: 6px !important;
+    margin-top: 16px !important;
+  }
+}
+
+.immersive-translate-modal .immersive-translate-modal-content-in-input {
+  max-width: 500px;
+}
+.immersive-translate-modal-content-in-input .immersive-translate-modal-body {
+  text-align: left;
+  max-height: unset;
+}
+
+.immersive-translate-modal-title {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333333;
+}
+
+.immersive-translate-modal-body {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 400;
+  color: #333333;
+  margin-top: 24px;
+  word-break: break-all;
+}
+
+@media screen and (max-width: 768px) {
+  .immersive-translate-modal-body {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+}
+
+.immersive-translate-close {
+  color: #666666;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.immersive-translate-close:hover,
+.immersive-translate-close:focus {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.immersive-translate-modal-footer {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.immersive-translate-btn {
+  width: fit-content;
+  color: #fff;
+  background-color: #ea4c89;
+  border: none;
+  font-size: 14px;
+  margin: 0 8px;
+  padding: 9px 30px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.immersive-translate-btn-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.immersive-translate-btn:hover {
+  background-color: #f082ac;
+}
+.immersive-translate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.immersive-translate-btn:disabled:hover {
+  background-color: #ea4c89;
+}
+
+.immersive-translate-link-btn {
+  background-color: transparent;
+  color: #ea4c89;
+  border: none;
+  cursor: pointer;
+  height: 30px;
+  line-height: 30px;
+}
+
+.immersive-translate-cancel-btn {
+  /* gray color */
+  background-color: rgb(89, 107, 120);
+}
+
+.immersive-translate-cancel-btn:hover {
+  background-color: hsl(205, 20%, 32%);
+}
+
+.immersive-translate-action-btn {
+  background-color: transparent;
+  color: #ea4c89;
+  border: 1px solid #ea4c89;
+}
+
+.immersive-translate-btn svg {
+  margin-right: 5px;
+}
+
+.immersive-translate-link {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  text-decoration: none;
+  color: #ea4c89;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+.immersive-translate-primary-link {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  text-decoration: none;
+  color: #ea4c89;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+.immersive-translate-modal input[type="radio"] {
+  margin: 0 6px;
+  cursor: pointer;
+}
+
+.immersive-translate-modal label {
+  cursor: pointer;
+}
+
+.immersive-translate-close-action {
+  position: absolute;
+  top: 2px;
+  right: 0px;
+  cursor: pointer;
+}
+
+.imt-image-status {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 16px !important;
+}
+.imt-image-status img,
+.imt-image-status svg,
+.imt-img-loading {
+  width: 28px !important;
+  height: 28px !important;
+  margin: 0 0 8px 0 !important;
+  min-height: 28px !important;
+  min-width: 28px !important;
+  position: relative !important;
+}
+.imt-img-loading {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAAA4CAMAAACfWMssAAAAtFBMVEUAAAD////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////oK74hAAAAPHRSTlMABBMIDyQXHwyBfFdDMSw+OjXCb+5RG51IvV/k0rOqlGRM6KKMhdvNyZBz9MaupmxpWyj437iYd/yJVNZeuUC7AAACt0lEQVRIx53T2XKiUBCA4QYOiyCbiAsuuGBcYtxiYtT3f6/pbqoYHVFO5r+iivpo6DpAWYpqeoFfr9f90DsYAuRSWkFnPO50OgR9PwiCUFcl2GEcx+N/YBh6pvKaefHlUgZd1zVe0NbYcQjGBfzrPE8Xz8aF+71D8gG6DHFPpc4a7xFiCDuhaWgKgGIJQ3d5IMGDrpS4S5KgpIm+en9f6PlAhKby4JwEIxlYJV9h5k5nee9GoxHJ2IDSNB0dwdad1NAxDJ/uXDHYmebdk4PdbkS58CIVHdYSUHTYYRWOJblWSyu2lmy3KNFVJNBhxcuGW4YBVCbYGRZwIooipHsNqjM4FbgOQqQqSKQQU9V8xmi1QlgHqQQ6DDBvRUVCDirs+EzGDGOQTCATgtYTnbCVLgsVgRE0T1QE0qHCFAht2z6dLvJQs3Lo2FQoDxWNUiBhaP4eRgwNkI+dAjVOA/kUrIDwf3CG8NfNOE0eiFotSuo+rBiq8tD9oY4Qzc6YJw99hl1wzpQvD7ef2M8QgnOGJfJw+EltQc+oX2yn907QB22WZcvlUpd143dqQu+8pCJZuGE4xCuPXJqqcs5sNpsI93Rmzym1k4Npk+oD1SH3/a3LOK/JpUBpWfqNySxWzCfNCUITuDG5dtuphrUJ1myeIE9bIsPiKrfqTai5WZxbhtNphYx6GEIHihyGFTI69lje/rxajdh0s0msZ0zYxyPLhYCb1CyHm9Qsd2H37Y3lugVwL9kNh8Ot8cha6fUNQ8nuXi5z9/ExsAO4zQrb/ev1yrCB7lGyQzgYDGuxq1toDN/JGvN+HyWNHKB7zEoK+PX11e12G431erGYzwmytAWU56fkMHY5JJnDRR2eZji3AwtIcrEV8Cojat/BdQ7XOwGV1e1hDjGGjXbdArm8uJZtCH5MbcctVX8A1WpqumJHwckAAAAASUVORK5CYII=");
+  background-size: 28px 28px;
+  animation: image-loading-rotate 1s linear infinite !important;
+}
+
+.imt-image-status span {
+  color: var(--bg-2, #fff) !important;
+  font-size: 14px !important;
+  line-height: 14px !important;
+  font-weight: 500 !important;
+  font-family: "PingFang SC", Arial, sans-serif !important;
+}
+
+.imt-primary-button {
+  display: flex;
+  padding: 12px 80px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: #ea4c89;
+  color: #fff;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  border: none;
+  cursor: pointer;
+}
+
+.imt-retry-text {
+  color: #999;
+  text-align: center;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 21px;
+  cursor: pointer;
+}
+
+.imt-action-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.imt-modal-content-text {
+  text-align: left;
+  color: #333;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+@keyframes image-loading-rotate {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.imt-linear-gradient-text {
+  background: linear-gradient(90deg, #00a6ff 0%, #c369ff 52.4%, #ff4590 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.imt-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imt-linear-black-btn {
+  border-radius: 50px;
+  background: linear-gradient(66deg, #222 19%, #696969 94.25%);
+  height: 48px;
+  width: 100%;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  justify-content: center;
+}
+</style></head>
+  <body>
+    <h1 hidden="">Isolated Segment</h1>
+  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a826d791bc24a8d',t:'MTc2NDc1ODIzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;" src="./saved_resource(2).html"></iframe>
+
+</body></html>
