@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getClaudeConversation, ClaudeConversation } from "@/lib/adapters/claudeAdapter";
+import { getClaudeConversation } from "@/lib/adapters/claudeAdapter";
+import { ClaudeConversation } from "@/types";
 import { cn } from "@/lib/utils";
 import { User, Bot } from "lucide-react";
 
