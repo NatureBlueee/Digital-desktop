@@ -21,12 +21,12 @@ export default function Taskbar() {
     { id: 'start', icon: 'https://img.icons8.com/fluency/96/windows-11.png', title: 'Start' },
     { id: 'search', icon: 'https://img.icons8.com/fluency/96/search.png', title: 'Search' },
     { id: 'task-view', icon: 'https://img.icons8.com/fluency/96/task-view.png', title: 'Task View' },
-    { id: 'wechat', icon: 'https://icons.iconarchive.com/icons/juancadr/software/256/WeChat-icon.png', title: 'WeChat' },
+    { id: 'wechat', icon: '/icons/wechat.png', title: 'WeChat' },
     { id: 'file-explorer', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', title: 'File Explorer' },
     { id: 'github', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Github-desktop-logo-symbol.svg/2048px-Github-desktop-logo-symbol.svg.png', title: 'GitHub' },
     { id: 'chrome', icon: 'https://img.icons8.com/fluency/96/chrome.png', title: 'Google Chrome' },
-    { id: 'notion', icon: 'https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png', title: 'Notion' },
-    { id: 'cursor', icon: 'https://www.cursor.com/assets/images/logo.svg', title: 'Cursor' },
+    { id: 'notion', icon: '/icons/notion.png', title: 'Notion' },
+    { id: 'cursor', icon: '/icons/cursor-ai-code-icon.svg', title: 'Cursor' },
     { id: 'arc', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Arc_Browser_logo.png/600px-Arc_Browser_logo.png', title: 'Arc Browser' },
   ];
 
@@ -226,22 +226,19 @@ export default function Taskbar() {
             <ChevronUp size={20} className="text-gray-600" />
         </div>
 
-        {/* Bluetooth */}
-        <div className="flex items-center justify-center h-8 w-8 hover:bg-white/50 rounded-md cursor-default transition-colors">
-            <img src="https://img.icons8.com/fluency/48/bluetooth.png" alt="Bluetooth" className="w-[20px] h-[20px]" />
-        </div>
-        
-        {/* Input Method */}
-        <div className="flex items-center gap-2 px-2 h-8 hover:bg-white/50 rounded-md cursor-default transition-colors">
-            <span className="text-[13px] text-gray-700 font-normal">中</span>
-            <span className="text-[13px] text-gray-700 font-normal">拼</span>
-        </div>
-
         {/* Network/Volume/Battery Group */}
         <div className="flex items-center gap-[10px] px-2 h-8 hover:bg-white/50 rounded-md cursor-default transition-colors">
-            <LucideIcons.Monitor size={20} className="text-gray-700" />
+            {/* Wifi (User Provided) */}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16.832 7.38355C17.2414 7.79294 17.6283 8.26104 17.9651 8.74899C18.1219 8.97626 18.0648 9.28765 17.8376 9.4445C17.6103 9.60136 17.2989 9.54428 17.142 9.31701C16.8389 8.87776 16.4906 8.45628 16.1249 8.09066C12.7619 4.72759 7.30926 4.72759 3.9462 8.09066C3.59796 8.4389 3.25337 8.86025 2.93919 9.31314C2.78178 9.54003 2.47025 9.59636 2.24336 9.43896C2.01647 9.28155 1.96014 8.97002 2.11754 8.74313C2.46401 8.24371 2.84593 7.77671 3.23909 7.38355C6.99268 3.62996 13.0785 3.62996 16.832 7.38355ZM14.5964 9.35699C15.0687 9.82932 15.4782 10.403 15.7902 11.013C15.9159 11.2589 15.8186 11.5601 15.5727 11.6859C15.3269 11.8116 15.0256 11.7143 14.8999 11.4684C14.6341 10.9488 14.2854 10.4603 13.8893 10.0641C11.7609 7.93576 8.31021 7.93576 6.18187 10.0641C5.7685 10.4775 5.43254 10.9425 5.17393 11.4538C5.04929 11.7002 4.74849 11.7989 4.50208 11.6742C4.25567 11.5496 4.15695 11.2488 4.28159 11.0024C4.58783 10.397 4.9862 9.84555 5.47476 9.35699C7.99363 6.83813 12.0775 6.83813 14.5964 9.35699ZM12.8874 11.8541C13.2417 12.2084 13.5336 12.6442 13.7368 13.1079C13.8476 13.3608 13.7324 13.6557 13.4795 13.7665C13.2265 13.8773 12.9317 13.7621 12.8208 13.5092C12.6665 13.157 12.4443 12.8252 12.1803 12.5613C10.9958 11.3768 9.07534 11.3768 7.89084 12.5613C7.62814 12.824 7.41534 13.1432 7.25978 13.4987C7.14909 13.7517 6.85427 13.867 6.60128 13.7563C6.3483 13.6456 6.23295 13.3508 6.34365 13.0978C6.54778 12.6313 6.83011 12.2078 7.18374 11.8541C8.75876 10.2791 11.3124 10.2791 12.8874 11.8541ZM10.9627 13.7868C11.4698 14.2938 11.4698 15.116 10.9627 15.623C10.4557 16.1301 9.63355 16.1301 9.12648 15.623C8.61942 15.116 8.61942 14.2938 9.12648 13.7868C9.63355 13.2797 10.4557 13.2797 10.9627 13.7868Z" fill="#212121"/>
+            </svg>
+            
             <Volume2 size={20} className="text-gray-700" />
-            <Battery size={20} className="text-gray-700" />
+            
+            {/* Battery (User Provided) */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="scale-90">
+                <path d="M17.0001 6C18.657 6 20.0001 7.34315 20.0001 9V10H21.0004C21.1825 10 21.3533 10.0487 21.5004 10.1338C21.7993 10.3067 22.0004 10.6299 22.0004 11V13C22.0004 13.3701 21.7993 13.6933 21.5004 13.8662C21.3533 13.9513 21.1825 14 21.0004 14H20.0001V15C20.0001 16.6569 18.657 18 17.0001 18H4.99976C3.34291 18 1.99976 16.6569 1.99976 15V9C1.99976 7.34315 3.34291 6 4.99976 6H17.0001ZM16.9982 7.5H4.99976C4.22006 7.5 3.57931 8.09489 3.50662 8.85554L3.49976 9V15C3.49976 15.7797 4.09464 16.4204 4.8553 16.4931L4.99976 16.5H16.9982C17.7779 16.5 18.4187 15.9051 18.4914 15.1445L18.4982 15V9C18.4982 8.2203 17.9033 7.57955 17.1427 7.50687L16.9982 7.5ZM6.00008 9H16.0001C16.5129 9 16.9356 9.38604 16.9934 9.88338L17.0001 10V14C17.0001 14.5128 16.6141 14.9355 16.1167 14.9933L16.0001 15H6.00008C5.48725 15 5.06457 14.614 5.00681 14.1166L5.00008 14V10C5.00008 9.48717 5.38612 9.06449 5.88346 9.00673L6.00008 9H16.0001H6.00008Z" fill="#212121"/>
+            </svg>
         </div>
 
         {/* Time & Date */}
