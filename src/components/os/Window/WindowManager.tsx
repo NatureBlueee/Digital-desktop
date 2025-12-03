@@ -23,10 +23,24 @@ export default function WindowManager() {
               width: 800,
               height: 600,
             }}
-            minWidth={300}
-            minHeight={200}
+            minWidth={400}
+            minHeight={300}
             bounds="parent"
             dragHandleClassName="drag-handle"
+            enableResizing={{
+                top: true, right: true, bottom: true, left: true,
+                topRight: true, bottomRight: true, bottomLeft: true, topLeft: true
+            }}
+            resizeHandleStyles={{
+                top: { height: '10px', top: '-5px', cursor: 'ns-resize' },
+                bottom: { height: '10px', bottom: '-5px', cursor: 'ns-resize' },
+                left: { width: '10px', left: '-5px', cursor: 'ew-resize' },
+                right: { width: '10px', right: '-5px', cursor: 'ew-resize' },
+                topRight: { width: '20px', height: '20px', right: '-10px', top: '-10px', cursor: 'ne-resize' },
+                topLeft: { width: '20px', height: '20px', left: '-10px', top: '-10px', cursor: 'nw-resize' },
+                bottomRight: { width: '20px', height: '20px', right: '-10px', bottom: '-10px', cursor: 'se-resize' },
+                bottomLeft: { width: '20px', height: '20px', left: '-10px', bottom: '-10px', cursor: 'sw-resize' },
+            }}
             style={{ zIndex: window.zIndex }}
             onMouseDown={() => focusWindow(window.id)}
           >

@@ -1,116 +1,138 @@
-"use client";
-
-import React, { useState, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
-import SidebarIcon from "./icons/SidebarIcon";
-import ChatIcon from "./icons/ChatIcon";
-import ProjectIcon from "./icons/ProjectIcon";
-import ArtifactIcon from "./icons/ArtifactIcon";
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { NewChatIcon, ChatsIcon, ProjectsIcon, ArtifactsIcon, CodeIcon } from './ClaudeIcons';
+import { PanelLeft, Star, ChevronDown } from 'lucide-react';
 
 interface ClaudeSidebarProps {
-  windowWidth: number;
+  isCollapsed: boolean;
+  toggleSidebar: () => void;
+  activeView: 'chat' | 'projects' | 'artifacts' | 'code';
+  onViewChange: (view: 'chat' | 'projects' | 'artifacts' | 'code') => void;
 }
 
-export default function ClaudeSidebar({ windowWidth }: ClaudeSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  
-  // Auto-collapse on small screens, but allow manual toggle if needed (though user spec implies automatic based on width)
-  // User said: "when width is small, only top left sidebar icon... when larger, full sidebar"
-  // Let's assume a breakpoint, e.g., 800px.
-  const isSmallScreen = windowWidth < 800;
+export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
+  isCollapsed,
+  toggleSidebar,
+  activeView,
+  onViewChange,
+}) => {
+  const navItems = [
+    { id: 'chat', label: 'New chat', icon: NewChatIcon, action: () => onViewChange('chat') },
+    { id: 'recents', label: 'Chats', icon: ChatsIcon, action: () => onViewChange('chat') }, // Maps to chat view for now
+    { id: 'projects', label: 'Projects', icon: ProjectsIcon, action: () => onViewChange('projects') },
+    { id: 'artifacts', label: 'Artifacts', icon: ArtifactsIcon, action: () => onViewChange('artifacts') },
+    { id: 'code', label: 'Code', icon: CodeIcon, action: () => onViewChange('code') },
+  ];
 
-  if (isSmallScreen) {
-    return (
-      <div className="absolute top-3 left-4 z-50">
-        <button className="p-2 hover:bg-gray-200/50 rounded-md transition-colors">
-            <SidebarIcon className="text-[#bfbfba]" />
-        </button>
-      </div>
-    );
-  }
+  const recentChats = [
+    "数据所有权与AI时代的web3想象",
+    "塔罗牌解读关系能量",
+    "AI素养与Z世代反向管理研究",
+    "数字艺术中的灵韵缺失",
+    "捕捉真实个性的提示词优化",
+    "写作作为逃离与凝视"
+  ];
+
+  const starredChats = [
+    "wowok理解不错",
+    "人机协作",
+    "英语"
+  ];
 
   return (
-    <nav className="flex flex-col px-0 relative transition duration-100 border-r border-[#e5e5e5] h-full bg-[#f9f9f9] w-[260px] shrink-0" aria-label="Sidebar">
-      {/* Header with Logo and Toggle */}
-      <div className="flex w-full items-center p-3 justify-between">
-        <div className="flex items-center gap-1.5 pl-2">
-            {/* Claude Logo Text */}
-            <span className="font-serif text-lg font-semibold text-[#3e3e3c]">Claude</span>
-        </div>
-        <button className="p-2 hover:bg-gray-200/50 rounded-md transition-colors group">
-            <SidebarIcon className="text-[#bfbfba] group-hover:text-gray-600" />
+    <nav
+      className={cn(
+        "flex flex-col h-full bg-[#f5f4ef] border-r border-[#e5e5e5] transition-all duration-300 ease-in-out relative z-20",
+        isCollapsed ? "w-[60px]" : "w-[260px]"
+      )}
+    >
+      {/* Toggle Button */}
+      <div className="p-3 flex items-center justify-start">
+        <button
+          onClick={toggleSidebar}
+          className="p-2 hover:bg-[#e5e4df] rounded-md text-gray-500 hover:text-gray-900 transition-colors"
+        >
+          <PanelLeft size={20} />
         </button>
       </div>
 
-      {/* Navigation Items */}
-      <div className="flex flex-col flex-grow overflow-hidden min-h-0">
-        <div className="flex flex-col px-2 pt-2 gap-1">
-            
-            {/* New Chat */}
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#ececec] transition-colors text-sm font-medium text-[#3e3e3c] group text-left">
-                <div className="w-6 h-6 bg-[#d97757] rounded-full flex items-center justify-center text-white shrink-0">
-                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 3C10.4142 3 10.75 3.33579 10.75 3.75V9.25H16.25C16.6642 9.25 17 9.58579 17 10C17 10.3882 16.7051 10.7075 16.3271 10.7461L16.25 10.75H10.75V16.25C10.75 16.6642 10.4142 17 10 17C9.58579 17 9.25 16.6642 9.25 16.25V10.75H3.75C3.33579 10.75 3 10.4142 3 10C3 9.58579 3.33579 9.25 3.75 9.25H9.25V3.75C9.25 3.33579 9.58579 3 10 3Z"/>
-                    </svg>
-                </div>
-                <span>New chat</span>
-            </button>
+      {/* Main Navigation */}
+      <div className="flex flex-col px-3 gap-1">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={item.action}
+            className={cn(
+              "flex items-center gap-3 p-2 rounded-lg text-sm font-medium transition-colors group",
+              activeView === item.id ? "bg-[#e5e4df] text-gray-900" : "text-gray-600 hover:bg-[#e5e4df] hover:text-gray-900"
+            )}
+            title={isCollapsed ? item.label : undefined}
+          >
+            <item.icon className={cn("shrink-0 text-gray-500 group-hover:text-gray-900", activeView === item.id && "text-gray-900")} />
+            {!isCollapsed && (
+              <span className="truncate opacity-100 transition-opacity duration-200">
+                {item.label}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-            {/* Chats */}
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#ececec] transition-colors text-sm font-medium text-[#5e5e5e] group text-left">
-                <div className="w-6 h-6 flex items-center justify-center shrink-0 text-[#5e5e5e]">
-                    <ChatIcon />
-                </div>
-                <span>Chats</span>
-            </button>
-
-            {/* Projects */}
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#ececec] transition-colors text-sm font-medium text-[#5e5e5e] group text-left">
-                <div className="w-6 h-6 flex items-center justify-center shrink-0 text-[#5e5e5e]">
-                    <ProjectIcon />
-                </div>
-                <span>Projects</span>
-            </button>
-            
-            {/* Artifacts */}
-            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#ececec] transition-colors text-sm font-medium text-[#5e5e5e] group text-left">
-                <div className="w-6 h-6 flex items-center justify-center shrink-0 text-[#5e5e5e]">
-                    <ArtifactIcon />
-                </div>
-                <span>Artifacts</span>
-            </button>
-
-        </div>
-
-        {/* Recents Section */}
-        <div className="flex-1 overflow-y-auto mt-4 px-4">
-            <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-2 px-2">
-                <span>Recents</span>
+      {/* Scrollable Content (Recents & Starred) */}
+      {!isCollapsed && (
+        <div className="flex-1 overflow-y-auto overflow-x-hidden mt-4 px-3 pb-4">
+          {/* Starred */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between px-2 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <span>Starred</span>
             </div>
-            <ul className="flex flex-col gap-1">
-                {["wowok理解不错", "人机协作", "英语", "数据所有权与AI时代的web3想象", "塔罗牌解读关系能量", "AI素养与Z世代反向管理", "数字艺术中的灵韵缺失"].map((item, i) => (
-                    <li key={i}>
-                        <button className="w-full text-left px-3 py-1.5 rounded-md hover:bg-[#ececec] transition-colors text-sm text-[#3e3e3c] truncate">
-                            {item}
-                        </button>
-                    </li>
-                ))}
+            <ul className="space-y-0.5">
+              {starredChats.map((chat, i) => (
+                <li key={i}>
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
+                    <span className="truncate flex-1">{chat}</span>
+                  </button>
+                </li>
+              ))}
             </ul>
-        </div>
+          </div>
 
-        {/* User Profile */}
-        <div className="p-3 border-t border-[#e5e5e5]">
-            <button className="flex items-center gap-3 w-full p-2 hover:bg-[#ececec] rounded-lg transition-colors text-left">
-                <div className="w-8 h-8 rounded-full bg-[#3e3e3c] text-white flex items-center justify-center text-xs font-medium shrink-0">
-                    N
-                </div>
-                <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium text-[#3e3e3c] truncate">Nature</span>
-                    <span className="text-xs text-gray-500 truncate">Pro plan</span>
-                </div>
-            </button>
+          {/* Recents */}
+          <div>
+            <div className="flex items-center justify-between px-2 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider group cursor-pointer">
+              <span>Recents</span>
+              <span className="opacity-0 group-hover:opacity-100 text-[10px]">Hide</span>
+            </div>
+            <ul className="space-y-0.5">
+              {recentChats.map((chat, i) => (
+                <li key={i}>
+                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
+                    <span className="truncate flex-1">{chat}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
+      )}
+
+      {/* User Profile (Bottom) */}
+      <div className="mt-auto p-3 border-t border-[#e5e5e5]">
+        <button className={cn(
+          "flex items-center gap-3 w-full p-2 rounded-lg hover:bg-[#e5e4df] transition-colors text-left",
+          isCollapsed && "justify-center px-0"
+        )}>
+          <div className="w-8 h-8 rounded-full bg-orange-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
+            N
+          </div>
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-900 truncate">Nature</div>
+              <div className="text-xs text-gray-500 truncate">Pro plan</div>
+            </div>
+          )}
+        </button>
       </div>
     </nav>
   );
-}
+};
