@@ -1,82 +1,101 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { getClaudeConversation } from "@/lib/adapters/claudeAdapter";
-import { ClaudeConversation } from "@/types";
+import React from "react";
 import { cn } from "@/lib/utils";
-import { User, Bot } from "lucide-react";
+import { Sparkles, Plus, SlidersHorizontal, History, PenLine, GraduationCap, Code2, Coffee, HardDrive } from "lucide-react";
 
 export default function ClaudeApp() {
-  const [conversation, setConversation] = useState<ClaudeConversation | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getClaudeConversation("mock").then((data) => {
-      setConversation(data);
-      setLoading(false);
-    });
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-[#fcfcfc]">
-        <div className="animate-pulse flex flex-col items-center gap-2">
-            <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-            <div className="text-sm text-gray-400">Loading conversation...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!conversation) return null;
-
   return (
-    <div className="flex flex-col h-full bg-[#fcfcfc]">
+    <div className="flex flex-col h-full bg-[#f0efe9] font-sans text-[#3e3e3c]">
       {/* Header */}
-      <div className="h-12 border-b flex items-center px-4 bg-white sticky top-0 z-10">
-        <h2 className="font-serif text-lg text-gray-800">{conversation.name}</h2>
+      <div className="h-10 flex items-center justify-center relative px-4 shrink-0">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <div className="w-5 h-5 text-[#d97757]">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+                </svg>
+            </div>
+        </div>
+        <span className="text-xs font-medium text-gray-500">Claude — Control+Alt+Space</span>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {conversation.chat_messages.map((msg) => (
-          <div key={msg.uuid} className={cn(
-            "flex gap-4 max-w-3xl mx-auto",
-            msg.sender === 'human' ? "flex-row-reverse" : "flex-row"
-          )}>
-            {/* Avatar */}
-            <div className={cn(
-              "w-8 h-8 rounded-sm flex items-center justify-center shrink-0",
-              msg.sender === 'human' ? "bg-gray-200 text-gray-600" : "bg-[#d97757] text-white"
-            )}>
-              {msg.sender === 'human' ? <User size={18} /> : <Bot size={18} />}
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 max-w-3xl mx-auto w-full">
+        
+        {/* Greeting */}
+        <div className="flex flex-col items-center gap-6 mb-12">
+            <div className="w-12 h-12 text-[#d97757]">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                </svg>
             </div>
+            <h1 className="text-4xl font-serif text-[#3e3e3c]">Hey there, Nature</h1>
+        </div>
 
-            {/* Bubble */}
-            <div className={cn(
-                "flex flex-col gap-1 min-w-0",
-                msg.sender === 'human' ? "items-end" : "items-start"
-            )}>
-                <div className="font-medium text-xs text-gray-400 mb-0.5">
-                    {msg.sender === 'human' ? 'You' : 'Claude'}
+        {/* Input Box */}
+        <div className="w-full bg-[#fbfaf8] rounded-2xl shadow-sm border border-gray-200/50 p-4 flex flex-col gap-4">
+            <textarea 
+                className="w-full bg-transparent border-none outline-none resize-none text-lg placeholder:text-gray-400 min-h-[60px]"
+                placeholder="How can I help you today?"
+                readOnly
+            />
+            
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">
+                        <Plus size={20} />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">
+                        <SlidersHorizontal size={18} />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-blue-500 bg-blue-50">
+                        <History size={18} />
+                    </button>
                 </div>
-                <div className={cn(
-                    "prose prose-sm max-w-none p-3 rounded-lg text-sm leading-relaxed whitespace-pre-wrap",
-                    msg.sender === 'human' ? "bg-[#f0f0f0] text-gray-800" : "bg-white border border-gray-100 shadow-sm text-gray-800"
-                )}>
-                    {msg.text}
+
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-gray-500">Opus 4.5</span>
+                    <button className="w-8 h-8 bg-[#d97757]/40 text-white rounded-lg flex items-center justify-center cursor-default">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 19V5M5 12l7-7 7 7"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
-          </div>
-        ))}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200/50 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm text-gray-600">
+                <PenLine size={16} />
+                <span>Write</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200/50 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm text-gray-600">
+                <GraduationCap size={16} />
+                <span>Learn</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200/50 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm text-gray-600">
+                <Code2 size={16} />
+                <span>Code</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200/50 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm text-gray-600">
+                <Coffee size={16} />
+                <span>Life stuff</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200/50 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm text-gray-600">
+                <div className="w-4 h-4 flex items-center justify-center">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png" alt="Drive" className="w-full h-full object-contain" />
+                </div>
+                <span>From Drive</span>
+            </button>
+        </div>
+
       </div>
-      
-      {/* Input Area (Read Only) */}
-      <div className="p-4 border-t bg-white">
-        <div className="max-w-3xl mx-auto relative">
-            <div className="w-full h-12 border rounded-md bg-gray-50 flex items-center px-4 text-gray-400 text-sm cursor-not-allowed">
-                This is a read-only archive.
-            </div>
+
+      {/* Footer User */}
+      <div className="p-4">
+        <div className="w-8 h-8 rounded-full bg-[#3e3e3c] text-white flex items-center justify-center text-xs font-medium">
+            N
         </div>
       </div>
     </div>

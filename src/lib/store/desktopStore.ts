@@ -8,6 +8,7 @@ export interface DesktopIcon {
   y: number;
   type: 'app' | 'folder' | 'file';
   appId?: string; // If it's an app, which app to open
+  shortcut?: boolean;
 }
 
 export interface WindowState {
@@ -42,11 +43,17 @@ interface DesktopState {
 
 export const useDesktopStore = create<DesktopState>((set) => ({
   icons: [
-    { id: 'recycle-bin', title: 'Recycle Bin', icon: 'https://img.icons8.com/fluency/96/trash.png', x: 0, y: 0, type: 'app', appId: 'recycle-bin' },
-    { id: 'this-pc', title: 'This PC', icon: 'https://img.icons8.com/fluency/96/workstation.png', x: 0, y: 1, type: 'app', appId: 'this-pc' },
-    { id: 'claude', title: 'Claude AI', icon: 'https://upload.wikimedia.org/wikipedia/commons/7/77/Claude_AI_logo.svg', x: 0, y: 2, type: 'app', appId: 'claude' },
-    { id: 'github', title: 'GitHub', icon: 'https://img.icons8.com/fluency/96/github.png', x: 0, y: 3, type: 'app', appId: 'github' },
-    { id: 'folder-1', title: 'Project Docs', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 1, y: 0, type: 'folder' },
+    { id: 'this-pc', title: '此电脑', icon: '/icons/this-pc.png', x: 0, y: 0, type: 'app', appId: 'this-pc' },
+    { id: 'github-desktop', title: 'GitHub Desktop', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Github-desktop-logo-symbol.svg/2048px-Github-desktop-logo-symbol.svg.png', x: 0, y: 1, type: 'app', appId: 'github', shortcut: true },
+    { id: 'notion', title: 'Notion', icon: '/icons/notion.png', x: 0, y: 2, type: 'app', appId: 'notion', shortcut: true },
+    { id: 'recycle-bin', title: '回收站', icon: '/icons/recycle-bin.png', x: 0, y: 3, type: 'app', appId: 'recycle-bin' },
+    { id: 'wechat', title: '微信', icon: '/icons/wechat.png', x: 0, y: 4, type: 'app', appId: 'wechat', shortcut: true },
+    { id: 'antigravity', title: 'Antigravity', icon: '/icons/antigravity.png', x: 0, y: 5, type: 'app', appId: 'antigravity', shortcut: true },
+    { id: 'google-drive', title: 'Google Drive', icon: 'https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo.png', x: 0, y: 6, type: 'app', appId: 'google-drive', shortcut: true },
+    { id: 'control-panel', title: '控制面板', icon: 'https://img.icons8.com/fluency/96/control-panel.png', x: 0, y: 7, type: 'app', appId: 'control-panel', shortcut: true },
+    { id: 'cursor', title: 'Cursor', icon: 'https://www.cursor.com/assets/images/logo.svg', x: 0, y: 8, type: 'app', appId: 'cursor', shortcut: true },
+    { id: 'claude', title: 'Claude', icon: 'https://upload.wikimedia.org/wikipedia/commons/7/77/Claude_AI_logo.svg', x: 0, y: 9, type: 'app', appId: 'claude', shortcut: true },
+    { id: 'new-folder', title: '新建文件夹', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 1, y: 0, type: 'folder' },
   ],
   selectedIconIds: [],
   windows: [],
