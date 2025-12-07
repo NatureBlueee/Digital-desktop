@@ -1,0 +1,222 @@
+/**
+ * ChatGPT UI 样式变量
+ *
+ * 基于官方 ChatGPT 界面提取的颜色和尺寸变量
+ * 支持 Light / Dark 主题切换
+ *
+ * 使用方式：在组件中添加 data-chatgpt-theme="light" 或 "dark" 属性
+ */
+
+/* ============================================
+   Light Theme (Default)
+   ============================================ */
+:root,
+[data-chatgpt-theme="light"] {
+  /* 背景色 */
+  --chatgpt-bg-primary: #ffffff;
+  --chatgpt-bg-secondary: #f9f9f9;
+  --chatgpt-bg-tertiary: #f4f4f4;
+  --chatgpt-bg-hover: rgba(0, 0, 0, 0.05);
+  --chatgpt-bg-active: rgba(0, 0, 0, 0.08);
+
+  /* 侧边栏 */
+  --chatgpt-sidebar-bg: #f9f9f9;
+  --chatgpt-sidebar-hover: rgba(0, 0, 0, 0.05);
+  --chatgpt-sidebar-active: rgba(0, 0, 0, 0.08);
+  --chatgpt-sidebar-width: 260px;
+
+  /* 文字颜色 */
+  --chatgpt-text-primary: #0d0d0d;
+  --chatgpt-text-secondary: #6e6e6e;
+  --chatgpt-text-tertiary: #8e8e8e;
+  --chatgpt-text-quaternary: #b4b4b4;
+
+  /* 边框 */
+  --chatgpt-border: rgba(0, 0, 0, 0.1);
+  --chatgpt-border-light: rgba(0, 0, 0, 0.05);
+
+  /* 品牌色 */
+  --chatgpt-accent: #10a37f;
+  --chatgpt-accent-hover: #0d8a6b;
+  --chatgpt-accent-purple: #6941c6;
+
+  /* 消息 */
+  --chatgpt-user-msg-bg: #f4f4f4;
+  --chatgpt-ai-msg-bg: transparent;
+
+  /* 输入框 */
+  --chatgpt-input-bg: #f4f4f4;
+  --chatgpt-input-border: transparent;
+  --chatgpt-input-placeholder: #8e8e8e;
+
+  /* 滚动条 */
+  --chatgpt-scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --chatgpt-scrollbar-track: transparent;
+
+  /* 阴影 */
+  --chatgpt-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --chatgpt-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   Dark Theme
+   ============================================ */
+[data-chatgpt-theme="dark"] {
+  /* 背景色 */
+  --chatgpt-bg-primary: #212121;
+  --chatgpt-bg-secondary: #171717;
+  --chatgpt-bg-tertiary: #2f2f2f;
+  --chatgpt-bg-hover: rgba(255, 255, 255, 0.05);
+  --chatgpt-bg-active: rgba(255, 255, 255, 0.1);
+
+  /* 侧边栏 */
+  --chatgpt-sidebar-bg: #171717;
+  --chatgpt-sidebar-hover: rgba(255, 255, 255, 0.05);
+  --chatgpt-sidebar-active: rgba(255, 255, 255, 0.1);
+
+  /* 文字颜色 */
+  --chatgpt-text-primary: #ececec;
+  --chatgpt-text-secondary: #b4b4b4;
+  --chatgpt-text-tertiary: #8e8e8e;
+  --chatgpt-text-quaternary: #6e6e6e;
+
+  /* 边框 */
+  --chatgpt-border: rgba(255, 255, 255, 0.1);
+  --chatgpt-border-light: rgba(255, 255, 255, 0.05);
+
+  /* 消息 */
+  --chatgpt-user-msg-bg: #2f2f2f;
+  --chatgpt-ai-msg-bg: transparent;
+
+  /* 输入框 */
+  --chatgpt-input-bg: #2f2f2f;
+  --chatgpt-input-border: rgba(255, 255, 255, 0.1);
+  --chatgpt-input-placeholder: #8e8e8e;
+
+  /* 滚动条 */
+  --chatgpt-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --chatgpt-scrollbar-track: transparent;
+
+  /* 阴影 */
+  --chatgpt-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --chatgpt-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   尺寸变量
+   ============================================ */
+:root {
+  /* 侧边栏 */
+  --chatgpt-sidebar-width: 260px;
+  --chatgpt-sidebar-collapsed-width: 0px;
+
+  /* 历史项 */
+  --chatgpt-history-item-height: 40px;
+  --chatgpt-history-item-padding: 8px 12px;
+
+  /* 消息 */
+  --chatgpt-message-max-width: 48rem;
+  --chatgpt-message-padding: 1rem 1.5rem;
+
+  /* 头像 */
+  --chatgpt-avatar-size-user: 32px;
+  --chatgpt-avatar-size-ai: 28px;
+
+  /* 输入框 */
+  --chatgpt-input-min-height: 52px;
+  --chatgpt-input-border-radius: 1.5rem;
+
+  /* 圆角 */
+  --chatgpt-radius-sm: 6px;
+  --chatgpt-radius-md: 10px;
+  --chatgpt-radius-lg: 16px;
+  --chatgpt-radius-xl: 24px;
+  --chatgpt-radius-full: 9999px;
+
+  /* 间距 */
+  --chatgpt-spacing-xs: 4px;
+  --chatgpt-spacing-sm: 8px;
+  --chatgpt-spacing-md: 12px;
+  --chatgpt-spacing-lg: 16px;
+  --chatgpt-spacing-xl: 24px;
+
+  /* 过渡 */
+  --chatgpt-transition-fast: 150ms ease;
+  --chatgpt-transition-normal: 200ms ease;
+  --chatgpt-transition-slow: 300ms ease;
+}
+
+/* ============================================
+   字体
+   ============================================ */
+.chatgpt-font {
+  font-family: 'Söhne', ui-sans-serif, system-ui, -apple-system,
+               'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans',
+               sans-serif, 'Helvetica Neue', Arial;
+}
+
+/* ============================================
+   自定义滚动条
+   ============================================ */
+.chatgpt-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--chatgpt-scrollbar-thumb) var(--chatgpt-scrollbar-track);
+}
+
+.chatgpt-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.chatgpt-scrollbar::-webkit-scrollbar-track {
+  background: var(--chatgpt-scrollbar-track);
+}
+
+.chatgpt-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--chatgpt-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.chatgpt-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--chatgpt-scrollbar-thumb);
+  opacity: 0.8;
+}
+
+/* ============================================
+   工具类
+   ============================================ */
+
+/* 文字截断 */
+.chatgpt-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 历史项 hover 效果 */
+.chatgpt-history-item {
+  transition: background-color var(--chatgpt-transition-fast);
+}
+
+.chatgpt-history-item:hover {
+  background-color: var(--chatgpt-sidebar-hover);
+}
+
+.chatgpt-history-item.active {
+  background-color: var(--chatgpt-sidebar-active);
+}
+
+/* 按钮 hover 效果 */
+.chatgpt-btn {
+  transition: all var(--chatgpt-transition-fast);
+}
+
+.chatgpt-btn:hover {
+  background-color: var(--chatgpt-bg-hover);
+}
+
+/* Superellipse 输入框效果（近似） */
+.chatgpt-input-superellipse {
+  border-radius: var(--chatgpt-input-border-radius);
+  /* 使用 CSS 模拟 superellipse 效果 */
+}
