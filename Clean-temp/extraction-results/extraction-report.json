@@ -1,0 +1,77 @@
+{
+  "summary": {
+    "lightThemeVariables": 101,
+    "darkThemeVariables": 0,
+    "uniqueClassNames": 377,
+    "domElements": 153,
+    "styleTags": 6
+  },
+  "keyColors": {
+    "light": {
+      "background": "#fff",
+      "text": "hsl(205deg, 20%, 32%)",
+      "primary": "hsl(195deg, 85%, 41%)",
+      "primaryHover": "hsl(195deg, 90%, 32%)"
+    },
+    "dark": {
+      "background": "#11191f",
+      "text": "",
+      "primary": "",
+      "primaryHover": ""
+    }
+  },
+  "sampleClasses": [
+    "light",
+    "hidden",
+    "bg-token-main-surface-primary",
+    "fixed",
+    "start-1/2",
+    "top-1",
+    "z-50",
+    "mx-auto",
+    "w-fit",
+    "-translate-x-1/2",
+    "translate-y-[-100lvh]",
+    "rounded-full",
+    "px-3",
+    "py-2",
+    "focus-visible:translate-y-0",
+    "print:hidden",
+    "flex",
+    "h-full",
+    "w-full",
+    "flex-col",
+    "relative",
+    "flex-1",
+    "transition-colors",
+    "z-0",
+    "flex-row",
+    "border-token-border-light",
+    "z-21",
+    "shrink-0",
+    "overflow-hidden",
+    "border-e"
+  ],
+  "sampleElements": [
+    "blocking-initial-modals-done",
+    "stage-slideover-sidebar",
+    "stage-sidebar-tiny-bar",
+    "create-new-chat-button",
+    "sidebar-item-library",
+    "accounts-profile-button",
+    "radix-_R_crb8osk9l35_",
+    "sidebar-header",
+    "close-sidebar-button",
+    "__lottie_element_2",
+    "radix-_r_5a_",
+    "radix-_r_5d_",
+    "radix-_r_5g_",
+    "__lottie_element_10",
+    "radix-_r_5j_",
+    "__lottie_element_18",
+    "radix-_r_5m_",
+    "radix-_r_5p_",
+    "history",
+    "history-item-0-options"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "light": {
+    "background": "rgb(255, 255, 255)",
+    "text": "rgb(13, 13, 13)",
+    "primary": "#000",
+    "primaryText": "#fff",
+    "secondary": "#5d5d5d",
+    "border": "#0d0d0d0d",
+    "link": "#2964aa",
+    "sidebar": {
+      "background": "#f9f9f9",
+      "text": "#0d0d0d"
+    }
+  }
+}

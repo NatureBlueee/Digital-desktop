@@ -1,0 +1,14 @@
+{
+  "light": {
+    "background": "#fff",
+    "text": "hsl(205deg, 20%, 32%)",
+    "primary": "hsl(195deg, 85%, 41%)",
+    "primaryHover": "hsl(195deg, 90%, 32%)"
+  },
+  "dark": {
+    "background": "#11191f",
+    "text": "",
+    "primary": "",
+    "primaryHover": ""
+  }
+}

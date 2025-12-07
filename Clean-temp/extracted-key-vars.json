@@ -1,0 +1,15 @@
+{
+  "--bg-primary": "#fff",
+  "--main-surface-primary": "#fff",
+  "--text-primary": "#0d0d0d",
+  "--text-secondary": "#5d5d5d",
+  "--theme-submit-btn-bg": "#000",
+  "--theme-submit-btn-text": "#fff",
+  "--sidebar-width": "260px",
+  "--sidebar-surface-primary": "#f9f9f9",
+  "--border-light": "#0d0d0d0d",
+  "--link": "#2964aa",
+  "--radius-lg": ".5rem",
+  "--spacing": ".25rem",
+  "--header-height": "calc(13*.25rem)"
+}
