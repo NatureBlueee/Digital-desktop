@@ -1,139 +1,239 @@
+/**
+ * ChatGPT 侧边栏组件
+ * 像素级还原官方 ChatGPT 侧边栏界面
+ */
+
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { PanelLeft, SquarePen, Search, Library, History, LayoutGrid, Folder, CheckCircle2, Ship, Palette, Briefcase, Globe } from 'lucide-react';
+import {
+  ChatGPTLogo,
+  SidebarToggleIcon,
+  NewChatIcon,
+  SearchIcon,
+  ProjectIcon,
+  MoreIcon,
+  MoonIcon,
+  SunIcon
+} from './icons';
+
+// 对话数据类型
+export interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: Date;
+  projectId?: string;
+}
+
+// 项目数据类型
+export interface Project {
+  id: string;
+  name: string;
+  color?: string;
+}
 
 interface ChatGPTSidebarProps {
   isCollapsed: boolean;
   toggleSidebar: () => void;
-  activeView: 'chat' | 'projects' | 'artifacts' | 'code';
-  onViewChange: (view: 'chat' | 'projects' | 'artifacts' | 'code') => void;
+  conversations: Conversation[];
+  projects?: Project[];
+  activeConversationId?: string;
+  onSelectConversation: (id: string) => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
+}
+
+// 辅助函数：按日期分组对话
+function groupConversationsByDate(conversations: Conversation[]) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const groups: { [key: string]: Conversation[] } = {
+    '今天': [],
+    '昨天': [],
+    '过去 7 天': [],
+    '过去 30 天': [],
+    '更早': [],
+  };
+
+  conversations.forEach((conv) => {
+    const date = new Date(conv.updatedAt);
+    if (date >= today) {
+      groups['今天'].push(conv);
+    } else if (date >= yesterday) {
+      groups['昨天'].push(conv);
+    } else if (date >= sevenDaysAgo) {
+      groups['过去 7 天'].push(conv);
+    } else if (date >= thirtyDaysAgo) {
+      groups['过去 30 天'].push(conv);
+    } else {
+      groups['更早'].push(conv);
+    }
+  });
+
+  return groups;
 }
 
 export const ChatGPTSidebar: React.FC<ChatGPTSidebarProps> = ({
   isCollapsed,
   toggleSidebar,
-  activeView,
-  onViewChange,
+  conversations,
+  projects = [],
+  activeConversationId,
+  onSelectConversation,
+  theme = 'light',
+  onToggleTheme,
 }) => {
-  const navItems = [
-    { id: 'chat', label: '新聊天', icon: SquarePen, action: () => onViewChange('chat') },
-    { id: 'search', label: '搜索聊天', icon: Search, action: () => onViewChange('chat') },
-    { id: 'library', label: '库', icon: Library, action: () => onViewChange('artifacts') },
-    { id: 'codex', label: 'Codex', icon: History, action: () => onViewChange('code') },
-  ];
+  const groupedConversations = groupConversationsByDate(conversations);
 
-  const gptItems = [
-    { label: '探索', icon: LayoutGrid },
-    { label: 'Resume/CV', icon: CheckCircle2, color: 'text-blue-500' },
-    { label: 'Midjourney | v7.0 | USE', icon: Ship, color: 'text-gray-700' },
-    { label: '微信公众号封面设计师', icon: Palette, color: 'text-orange-500' },
-  ];
-
-  const projectItems = [
-    { label: '新项目', icon: Folder },
-    { label: 'WoWok', icon: Folder },
-    { label: 'NEU简历', icon: Briefcase, color: 'text-blue-500' },
-    { label: '配色设计', icon: Palette, color: 'text-pink-500' },
-  ];
+  // 收起状态时只显示切换按钮
+  if (isCollapsed) {
+    return (
+      <div className="flex flex-col h-full w-0 overflow-hidden transition-all duration-300">
+        {/* 收起状态不显示任何内容 */}
+      </div>
+    );
+  }
 
   return (
     <nav
       className={cn(
-        "flex flex-col h-full bg-[#f9f9f9] transition-all duration-300 ease-in-out relative z-20 pt-2",
-        isCollapsed ? "w-[60px]" : "w-[260px]"
+        "flex flex-col h-full transition-all duration-300 ease-in-out relative",
+        "w-[260px] bg-[var(--chatgpt-sidebar-bg,#f9f9f9)]"
       )}
+      style={{
+        backgroundColor: 'var(--chatgpt-sidebar-bg)',
+      }}
     >
-      {/* Header */}
-      <div className="px-3 mb-2 flex items-center justify-between">
-        {!isCollapsed && (
-             <div className="flex items-center gap-2 px-2 py-2 hover:bg-gray-200/50 rounded-lg cursor-pointer transition-colors">
-                <div className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center">
-                    <Globe size={14} className="text-gray-600" />
-                </div>
-                <span className="font-medium text-gray-700">ChatGPT</span>
-             </div>
-        )}
+      {/* 顶部区域：Logo + 新建聊天 + 收起按钮 */}
+      <div className="flex items-center justify-between px-3 py-3 h-14">
+        {/* 左侧：收起按钮 */}
         <button
           onClick={toggleSidebar}
-          className="p-2 hover:bg-gray-200 rounded-md text-gray-500 hover:text-gray-900 transition-colors"
+          className="p-2 rounded-lg hover:bg-[var(--chatgpt-sidebar-hover)] transition-colors"
+          title="收起侧边栏"
         >
-          <PanelLeft size={20} />
+          <SidebarToggleIcon size={20} className="text-[var(--chatgpt-text-secondary)]" />
+        </button>
+
+        {/* 右侧：新建聊天按钮 */}
+        <button
+          className="p-2 rounded-lg hover:bg-[var(--chatgpt-sidebar-hover)] transition-colors"
+          title="新建聊天"
+        >
+          <NewChatIcon size={20} className="text-[var(--chatgpt-text-secondary)]" />
         </button>
       </div>
 
-      {/* Main Navigation */}
-      <div className="flex flex-col px-2 gap-0.5">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={item.action}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group text-gray-700 hover:bg-gray-200/60",
-              activeView === item.id && "bg-gray-200/60"
-            )}
-            title={isCollapsed ? item.label : undefined}
-          >
-            <item.icon size={18} className="shrink-0 text-gray-600" />
-            {!isCollapsed && (
-              <span className="truncate opacity-100 transition-opacity duration-200">
-                {item.label}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* 搜索按钮 */}
+      <div className="px-3 mb-2">
+        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[var(--chatgpt-text-secondary)] hover:bg-[var(--chatgpt-sidebar-hover)] transition-colors">
+          <SearchIcon size={18} className="shrink-0" />
+          <span>搜索</span>
+        </button>
       </div>
 
-      {/* Scrollable Content */}
-      {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden mt-4 px-4 pb-4 space-y-6">
-          {/* GPT Section */}
-          <div>
-            <div className="text-xs font-medium text-gray-400 mb-2 px-1">GPT</div>
-            <ul className="space-y-0.5">
-              {gptItems.map((item, i) => (
-                <li key={i}>
-                  <button className="w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-200/60 text-left truncate group">
-                    <item.icon size={16} className={cn("shrink-0", item.color || "text-gray-500")} />
-                    <span className="truncate flex-1">{item.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* 可滚动的对话列表区域 */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden chatgpt-scrollbar px-2">
+        {/* 按日期分组的对话列表 */}
+        {Object.entries(groupedConversations).map(([groupName, items]) => {
+          if (items.length === 0) return null;
 
-          {/* Projects Section */}
-          <div>
-            <div className="text-xs font-medium text-gray-400 mb-2 px-1">项目</div>
-            <ul className="space-y-0.5">
-              {projectItems.map((item, i) => (
-                <li key={i}>
-                  <button className="w-full flex items-center gap-3 px-2 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-200/60 text-left truncate group">
-                    <item.icon size={16} className={cn("shrink-0", item.color || "text-gray-500")} />
-                    <span className="truncate flex-1">{item.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+          return (
+            <div key={groupName} className="mb-4">
+              {/* 分组标题 */}
+              <div className="px-3 py-2 text-xs font-medium text-[var(--chatgpt-text-tertiary)]">
+                {groupName}
+              </div>
 
-      {/* User Profile (Bottom) */}
-      <div className="mt-auto p-3">
-        <button className={cn(
-          "flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-200/60 transition-colors text-left",
-          isCollapsed && "justify-center px-0"
-        )}>
-          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
-             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full bg-gray-100" />
-          </div>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">张晨曦</div>
-              <div className="text-xs text-gray-500 truncate">Plus</div>
+              {/* 对话列表 */}
+              <ul className="space-y-0.5">
+                {items.map((conv) => (
+                  <li key={conv.id}>
+                    <button
+                      onClick={() => onSelectConversation(conv.id)}
+                      className={cn(
+                        "w-full group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors text-left",
+                        activeConversationId === conv.id
+                          ? "bg-[var(--chatgpt-sidebar-active)]"
+                          : "hover:bg-[var(--chatgpt-sidebar-hover)]"
+                      )}
+                    >
+                      {/* 对话标题 */}
+                      <span className="flex-1 truncate text-[var(--chatgpt-text-primary)]">
+                        {conv.title}
+                      </span>
+
+                      {/* Hover 时显示更多按钮 */}
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreIcon size={16} className="text-[var(--chatgpt-text-tertiary)]" />
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
+          );
+        })}
+
+        {/* 项目分组（如果有） */}
+        {projects.length > 0 && (
+          <div className="mb-4 mt-6">
+            <div className="px-3 py-2 text-xs font-medium text-[var(--chatgpt-text-tertiary)]">
+              项目
+            </div>
+            <ul className="space-y-0.5">
+              {projects.map((project) => (
+                <li key={project.id}>
+                  <button className="w-full group flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm hover:bg-[var(--chatgpt-sidebar-hover)] transition-colors text-left">
+                    <ProjectIcon
+                      size={18}
+                      className="shrink-0"
+                      style={{ color: project.color || 'var(--chatgpt-text-secondary)' }}
+                    />
+                    <span className="flex-1 truncate text-[var(--chatgpt-text-primary)]">
+                      {project.name}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* 底部区域：用户信息 + 主题切换 */}
+      <div className="mt-auto border-t border-[var(--chatgpt-border-light)] p-3">
+        <div className="flex items-center justify-between">
+          {/* 用户信息 */}
+          <button className="flex items-center gap-3 flex-1 p-2 rounded-lg hover:bg-[var(--chatgpt-sidebar-hover)] transition-colors">
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
+              U
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <div className="text-sm font-medium text-[var(--chatgpt-text-primary)] truncate">
+                用户
+              </div>
+            </div>
+          </button>
+
+          {/* 主题切换按钮 */}
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              className="p-2 rounded-lg hover:bg-[var(--chatgpt-sidebar-hover)] transition-colors"
+              title={theme === 'light' ? '切换到深色模式' : '切换到浅色模式'}
+            >
+              {theme === 'light' ? (
+                <MoonIcon size={18} className="text-[var(--chatgpt-text-secondary)]" />
+              ) : (
+                <SunIcon size={18} className="text-[var(--chatgpt-text-secondary)]" />
+              )}
+            </button>
           )}
-        </button>
+        </div>
       </div>
     </nav>
   );
