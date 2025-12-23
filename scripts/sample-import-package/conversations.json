@@ -1,0 +1,26 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "title": "Understanding React Hooks",
+    "summary": "A deep dive into React hooks, including useState, useEffect, and custom hooks.",
+    "tags": ["react", "programming", "web-dev"],
+    "visibility": "public",
+    "sort_key": "2025-12-20T10:00:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "title": "Building a Design System",
+    "summary": "Discussion about creating a cohesive design system with Tailwind CSS.",
+    "tags": ["design", "css", "tailwind"],
+    "visibility": "public",
+    "sort_key": "2025-12-18T14:30:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "title": "Private Project Notes",
+    "summary": "Internal notes for a private project.",
+    "tags": ["private", "notes"],
+    "visibility": "unlisted",
+    "sort_key": "2025-12-15T09:00:00Z"
+  }
+]

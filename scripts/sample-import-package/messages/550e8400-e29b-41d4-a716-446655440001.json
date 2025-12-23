@@ -1,0 +1,34 @@
+[
+  {
+    "id": "msg-001-001",
+    "role": "user",
+    "order_index": 1,
+    "created_at": "2025-12-20T10:00:00Z",
+    "content_md": "Can you explain how React's `useState` hook works? I'm trying to understand the fundamental concepts.",
+    "assets": []
+  },
+  {
+    "id": "msg-001-002",
+    "role": "assistant",
+    "order_index": 2,
+    "created_at": "2025-12-20T10:00:30Z",
+    "content_md": "# Understanding useState\n\nThe `useState` hook is one of the most fundamental hooks in React. Here's how it works:\n\n## Basic Syntax\n\n```jsx\nconst [state, setState] = useState(initialValue);\n```\n\n## Key Concepts\n\n1. **State Declaration**: `useState` returns an array with two elements:\n   - The current state value\n   - A function to update that value\n\n2. **Initial Value**: The argument to `useState` is the initial state value.\n\n3. **Re-rendering**: When you call `setState`, React re-renders the component.\n\n## Example\n\n```jsx\nfunction Counter() {\n  const [count, setCount] = useState(0);\n  \n  return (\n    <button onClick={() => setCount(count + 1)}>\n      Count: {count}\n    </button>\n  );\n}\n```\n\nThe state persists across re-renders, making it the primary way to add interactivity to your components.",
+    "assets": []
+  },
+  {
+    "id": "msg-001-003",
+    "role": "user",
+    "order_index": 3,
+    "created_at": "2025-12-20T10:05:00Z",
+    "content_md": "That makes sense! What about `useEffect`? When should I use it?",
+    "assets": []
+  },
+  {
+    "id": "msg-001-004",
+    "role": "assistant",
+    "order_index": 4,
+    "created_at": "2025-12-20T10:05:45Z",
+    "content_md": "# useEffect for Side Effects\n\n`useEffect` is used for **side effects** - operations that happen outside of React's rendering process.\n\n## Common Use Cases\n\n- Fetching data from an API\n- Setting up subscriptions\n- Manually changing the DOM\n- Setting timers\n\n## Basic Syntax\n\n```jsx\nuseEffect(() => {\n  // Effect code here\n  \n  return () => {\n    // Cleanup code (optional)\n  };\n}, [dependencies]);\n```\n\n## Dependency Array\n\n| Dependency | Behavior |\n|------------|----------|\n| `[]` | Runs once on mount |\n| `[value]` | Runs when `value` changes |\n| No array | Runs on every render |\n\n## Example: Fetching Data\n\n```jsx\nfunction UserProfile({ userId }) {\n  const [user, setUser] = useState(null);\n  \n  useEffect(() => {\n    async function fetchUser() {\n      const response = await fetch(`/api/users/${userId}`);\n      setUser(await response.json());\n    }\n    fetchUser();\n  }, [userId]);\n  \n  return user ? <h1>{user.name}</h1> : <p>Loading...</p>;\n}\n```\n\n> **Pro tip**: Always include all values from the component scope that change over time and are used by the effect in the dependency array.",
+    "assets": []
+  }
+]

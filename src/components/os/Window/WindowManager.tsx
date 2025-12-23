@@ -5,7 +5,7 @@ import { Rnd } from "react-rnd";
 import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
-import { ChatGPTApp } from "@/components/apps/ChatGPT/ChatGPTApp";
+import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -131,7 +131,7 @@ export default function WindowManager() {
               {window.appId === 'claude' ? (
                 <ClaudeApp windowId={window.id} />
               ) : window.appId === 'chatgpt' ? (
-                <ChatGPTApp windowId={window.id} />
+                <ChatGPTArchiveApp windowId={window.id} />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>

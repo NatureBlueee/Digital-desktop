@@ -8,10 +8,11 @@ import { AppType, ApiResponse } from '@/types';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
   try {
-    const appType = params.type as AppType;
+    const { type } = await params;
+    const appType = type as AppType;
     const app = await getAppByType(appType);
 
     if (!app) {
