@@ -12,11 +12,30 @@ import {
   ConversationListParams,
   MessageListParams,
   SearchParams,
+  MessageRole,
 } from '@/types/chatgpt-archive';
 
 const DEFAULT_PAGE_SIZE = 30;
 const MESSAGE_PAGE_SIZE = 50;
 const SEARCH_PAGE_SIZE = 20;
+
+// Internal type for partial message data from queries
+interface PartialMessageRow {
+  id: string;
+  role: MessageRole;
+  created_at: string;
+  order_index: number;
+  content_md: string;
+  assets: { asset_id: string; caption?: string; alt?: string }[];
+}
+
+// Internal type for search fallback
+interface SearchMessageRow {
+  id: string;
+  conversation_id: string;
+  role: MessageRole;
+  content_text: string;
+}
 
 // ============================================================================
 // Conversations
@@ -204,12 +223,12 @@ export async function getAllConversationMessages(
  * 解析消息中的资源引用，获取完整 URL
  */
 async function resolveMessageAssets(
-  messages: ChatGPTMessageDB[]
+  messages: PartialMessageRow[]
 ): Promise<Message[]> {
   // Collect all asset IDs
   const assetIds = new Set<string>();
   messages.forEach((msg) => {
-    (msg.assets || []).forEach((ref: { asset_id: string }) => {
+    (msg.assets || []).forEach((ref) => {
       assetIds.add(ref.asset_id);
     });
   });
@@ -355,7 +374,7 @@ async function searchMessagesFallback(
 
   if (error) throw error;
 
-  const results = (data || []).map((msg: ChatGPTMessageDB) => ({
+  const results = (data || []).map((msg: SearchMessageRow) => ({
     conversation_id: msg.conversation_id,
     conversation_title: convTitleMap.get(msg.conversation_id) || '',
     message_id: msg.id,
