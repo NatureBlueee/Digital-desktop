@@ -1,0 +1,18 @@
+[
+  {
+    "id": "msg-002-001",
+    "role": "user",
+    "order_index": 1,
+    "created_at": "2025-12-18T14:30:00Z",
+    "content_md": "I want to build a design system using Tailwind CSS. Where should I start?",
+    "assets": []
+  },
+  {
+    "id": "msg-002-002",
+    "role": "assistant",
+    "order_index": 2,
+    "created_at": "2025-12-18T14:31:00Z",
+    "content_md": "Building a design system with Tailwind CSS is a great choice! Here's a structured approach:\n\n## 1. Define Your Design Tokens\n\nStart by extending the `tailwind.config.js`:\n\n```js\nmodule.exports = {\n  theme: {\n    extend: {\n      colors: {\n        primary: {\n          50: '#f0f9ff',\n          500: '#0ea5e9',\n          900: '#0c4a6e',\n        },\n        // ... more colors\n      },\n      fontFamily: {\n        sans: ['Inter', 'system-ui', 'sans-serif'],\n      },\n      spacing: {\n        '18': '4.5rem',\n      },\n    },\n  },\n};\n```\n\n## 2. Create Base Components\n\nBuild atomic components first:\n\n- **Button** - Primary, secondary, outline variants\n- **Input** - Text, select, checkbox\n- **Typography** - Headings, body, captions\n\n## 3. Use CSS Variables for Theming\n\n```css\n:root {\n  --color-bg: theme('colors.white');\n  --color-text: theme('colors.gray.900');\n}\n\n.dark {\n  --color-bg: theme('colors.gray.900');\n  --color-text: theme('colors.gray.100');\n}\n```\n\n## 4. Document Everything\n\nUse Storybook or a similar tool to document your components with examples.",
+    "assets": []
+  }
+]
