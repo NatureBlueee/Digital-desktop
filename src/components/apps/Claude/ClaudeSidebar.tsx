@@ -1,13 +1,18 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { NewChatIcon, ChatsIcon, ProjectsIcon, ArtifactsIcon, CodeIcon } from './ClaudeIcons';
-import { PanelLeft } from 'lucide-react';
+import { PanelLeft, Star } from 'lucide-react';
+import { useConversations } from './hooks/useClaudeData';
+import type { ConversationListItem } from '@/types/claude-archive';
 
 interface ClaudeSidebarProps {
   isCollapsed: boolean;
   toggleSidebar: () => void;
   activeView: 'chat' | 'projects' | 'artifacts' | 'code';
   onViewChange: (view: 'chat' | 'projects' | 'artifacts' | 'code') => void;
+  onSelectConversation?: (conversation: ConversationListItem) => void;
+  onNewChat?: () => void;
+  selectedConversationId?: string;
 }
 
 export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
@@ -15,16 +20,23 @@ export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
   toggleSidebar,
   activeView,
   onViewChange,
+  onSelectConversation,
+  onNewChat,
+  selectedConversationId,
 }) => {
+  // Fetch conversations from API
+  const { conversations, starredConversations, loading, error } = useConversations();
+
   const navItems = [
-    { id: 'chat', label: 'New chat', icon: NewChatIcon, action: () => onViewChange('chat') },
+    { id: 'chat', label: 'New chat', icon: NewChatIcon, action: () => { onNewChat?.(); onViewChange('chat'); } },
     { id: 'recents', label: 'Chats', icon: ChatsIcon, action: () => onViewChange('chat') },
     { id: 'projects', label: 'Projects', icon: ProjectsIcon, action: () => onViewChange('projects') },
     { id: 'artifacts', label: 'Artifacts', icon: ArtifactsIcon, action: () => onViewChange('artifacts') },
     { id: 'code', label: 'Code', icon: CodeIcon, action: () => onViewChange('code') },
   ];
 
-  const recentChats = [
+  // Fallback data for when API is not available
+  const fallbackRecentChats = [
     "数据所有权与AI时代的web3想象",
     "塔罗牌解读关系能量",
     "AI素养与Z世代反向管理研究",
@@ -33,11 +45,15 @@ export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
     "写作作为逃离与凝视"
   ];
 
-  const starredChats = [
+  const fallbackStarredChats = [
     "wowok理解不错",
     "人机协作",
     "英语"
   ];
+
+  // Use API data or fallback to hardcoded data
+  const displayRecentChats = conversations.length > 0 ? conversations : null;
+  const displayStarredChats = starredConversations.length > 0 ? starredConversations : null;
 
   return (
     <nav
@@ -81,19 +97,47 @@ export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
       {/* Scrollable Content (Recents & Starred) */}
       {!isCollapsed && (
         <div className="flex-1 overflow-y-auto overflow-x-hidden mt-4 px-3 pb-4">
+          {/* Loading State */}
+          {loading && (
+            <div className="px-2 py-4">
+              <div className="animate-pulse space-y-2">
+                <div className="h-3 bg-gray-200 rounded w-20" />
+                <div className="h-8 bg-gray-100 rounded" />
+                <div className="h-8 bg-gray-100 rounded" />
+              </div>
+            </div>
+          )}
+
           {/* Starred */}
           <div className="mb-4">
             <div className="flex items-center justify-between px-2 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               <span>Starred</span>
             </div>
             <ul className="space-y-0.5">
-              {starredChats.map((chat, i) => (
-                <li key={i}>
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
-                    <span className="truncate flex-1">{chat}</span>
-                  </button>
-                </li>
-              ))}
+              {displayStarredChats ? (
+                displayStarredChats.map((conv) => (
+                  <li key={conv.id}>
+                    <button
+                      onClick={() => onSelectConversation?.(conv)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group",
+                        selectedConversationId === conv.id && "bg-[#e5e4df]"
+                      )}
+                    >
+                      <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />
+                      <span className="truncate flex-1">{conv.title}</span>
+                    </button>
+                  </li>
+                ))
+              ) : (
+                fallbackStarredChats.map((chat, i) => (
+                  <li key={i}>
+                    <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
+                      <span className="truncate flex-1">{chat}</span>
+                    </button>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 
@@ -104,13 +148,29 @@ export const ClaudeSidebar: React.FC<ClaudeSidebarProps> = ({
               <span className="opacity-0 group-hover:opacity-100 text-[10px]">Hide</span>
             </div>
             <ul className="space-y-0.5">
-              {recentChats.map((chat, i) => (
-                <li key={i}>
-                  <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
-                    <span className="truncate flex-1">{chat}</span>
-                  </button>
-                </li>
-              ))}
+              {displayRecentChats ? (
+                displayRecentChats.map((conv) => (
+                  <li key={conv.id}>
+                    <button
+                      onClick={() => onSelectConversation?.(conv)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group",
+                        selectedConversationId === conv.id && "bg-[#e5e4df]"
+                      )}
+                    >
+                      <span className="truncate flex-1">{conv.title}</span>
+                    </button>
+                  </li>
+                ))
+              ) : (
+                fallbackRecentChats.map((chat, i) => (
+                  <li key={i}>
+                    <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 rounded-md hover:bg-[#e5e4df] text-left truncate group">
+                      <span className="truncate flex-1">{chat}</span>
+                    </button>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
         </div>

@@ -6,6 +6,9 @@ import { ClaudeSidebar } from './ClaudeSidebar';
 import { ClaudeChat } from './ClaudeChat';
 import { ClaudeProjects } from './ClaudeProjects';
 import { ClaudeArtifacts } from './ClaudeArtifacts';
+import { ClaudeConversationView } from './ClaudeConversationView';
+import { useConversation } from './hooks/useClaudeData';
+import type { ConversationListItem } from '@/types/claude-archive';
 
 interface ClaudeAppProps {
   windowId: string;
@@ -15,8 +18,28 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
   const { closeWindow, minimizeWindow, maximizeWindow, windows } = useDesktopStore();
   const [activeView, setActiveView] = useState<'chat' | 'projects' | 'artifacts' | 'code'>('chat');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<ConversationListItem | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(1000);
+
+  // Fetch conversation data when selected
+  const { conversation, messages, loading: conversationLoading } = useConversation(
+    selectedConversation?.id || null
+  );
+
+  const handleSelectConversation = (conv: ConversationListItem) => {
+    setSelectedConversation(conv);
+    setActiveView('chat');
+  };
+
+  const handleBackToHome = () => {
+    setSelectedConversation(null);
+  };
+
+  const handleNewChat = () => {
+    setSelectedConversation(null);
+    setActiveView('chat');
+  };
 
   // Track window width for responsive behavior
   useEffect(() => {
@@ -48,7 +71,20 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
           </div>
         </div>
       );
-      default: return <ClaudeChat />;
+      default:
+        // Show conversation view if a conversation is selected, otherwise show new chat
+        if (selectedConversation) {
+          return (
+            <ClaudeConversationView
+              title={selectedConversation.title}
+              isStarred={selectedConversation.is_starred}
+              messages={messages}
+              loading={conversationLoading}
+              onBack={handleBackToHome}
+            />
+          );
+        }
+        return <ClaudeChat />;
     }
   };
 
@@ -80,11 +116,14 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
       </div>
 
       <div className="flex flex-1 overflow-hidden relative pt-0">
-        <ClaudeSidebar 
-          isCollapsed={isSidebarCollapsed} 
+        <ClaudeSidebar
+          isCollapsed={isSidebarCollapsed}
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           activeView={activeView}
           onViewChange={setActiveView}
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleNewChat}
+          selectedConversationId={selectedConversation?.id}
         />
         
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white rounded-tl-2xl shadow-[0_0_15px_rgba(0,0,0,0.03)] border-l border-gray-100/50 ml-[-1px] z-10 relative">
