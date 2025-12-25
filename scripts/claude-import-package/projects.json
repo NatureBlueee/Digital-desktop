@@ -1,0 +1,16 @@
+[
+  {
+    "id": "proj-001",
+    "title": "Digital Desktop Development",
+    "description": "Building a Windows 11 style desktop environment for the web",
+    "icon": "💻",
+    "color": "#8B5CF6"
+  },
+  {
+    "id": "proj-002",
+    "title": "AI Integration Research",
+    "description": "Research and documentation for integrating AI assistants",
+    "icon": "🤖",
+    "color": "#06B6D4"
+  }
+]
