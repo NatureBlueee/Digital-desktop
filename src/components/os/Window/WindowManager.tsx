@@ -6,7 +6,7 @@ import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
-import { AIIDEApp } from "@/components/apps/AIIDE";
+import { CursorApp } from "@/components/apps/AIIDE";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -134,9 +134,9 @@ export default function WindowManager() {
               ) : window.appId === 'chatgpt' ? (
                 <ChatGPTArchiveApp windowId={window.id} />
               ) : window.appId === 'cursor' ? (
-                <AIIDEApp windowId={window.id} initialIDE="cursor" />
+                <CursorApp windowId={window.id} appType="cursor" />
               ) : window.appId === 'antigravity' ? (
-                <AIIDEApp windowId={window.id} initialIDE="antigravity" />
+                <CursorApp windowId={window.id} appType="antigravity" />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>
