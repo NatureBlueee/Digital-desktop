@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import {
   getConversationMessages,
   getAllConversationMessages,
 } from '@/lib/supabase/claude-database';
+import { getMockMessages } from '@/lib/mock/claude-data';
 import { ApiResponse } from '@/types';
 
 /**
@@ -20,6 +22,19 @@ export async function GET(
     const cursor = searchParams.get('cursor');
     const limit = searchParams.get('limit');
     const direction = searchParams.get('direction') as 'forward' | 'backward' | null;
+
+    // Use mock data if Supabase is not configured
+    if (!isSupabaseConfigured) {
+      const messages = getMockMessages(id);
+      return NextResponse.json<ApiResponse>({
+        success: true,
+        data: {
+          data: messages,
+          next_cursor: null,
+          has_more: false,
+        },
+      });
+    }
 
     if (all) {
       const messages = await getAllConversationMessages(id);

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getConversationById } from '@/lib/supabase/claude-database';
+import { getMockConversation } from '@/lib/mock/claude-data';
 import { ApiResponse } from '@/types';
 
 /**
@@ -12,7 +14,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const conversation = await getConversationById(id);
+
+    // Use mock data if Supabase is not configured
+    const conversation = isSupabaseConfigured
+      ? await getConversationById(id)
+      : getMockConversation(id);
 
     if (!conversation) {
       return NextResponse.json<ApiResponse>(

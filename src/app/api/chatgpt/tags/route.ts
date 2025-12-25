@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getAllTags } from '@/lib/supabase/chatgpt-database';
+import { getMockTags } from '@/lib/mock/chatgpt-data';
 import { ApiResponse } from '@/types/chatgpt-archive';
 
 /**
@@ -8,7 +10,10 @@ import { ApiResponse } from '@/types/chatgpt-archive';
  */
 export async function GET() {
   try {
-    const tags = await getAllTags();
+    // Use mock data if Supabase is not configured
+    const tags = isSupabaseConfigured
+      ? await getAllTags()
+      : getMockTags();
 
     const response: ApiResponse<string[]> = {
       success: true,

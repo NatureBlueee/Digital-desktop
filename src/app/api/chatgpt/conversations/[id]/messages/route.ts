@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getConversationMessages, getAllConversationMessages } from '@/lib/supabase/chatgpt-database';
+import { getMockMessages } from '@/lib/mock/chatgpt-data';
 import { ApiResponse, PaginatedResponse, Message } from '@/types/chatgpt-archive';
 
 /**
@@ -21,6 +23,16 @@ export async function GET(
     const { searchParams } = new URL(request.url);
 
     const all = searchParams.get('all') === 'true';
+
+    // Use mock data if Supabase is not configured
+    if (!isSupabaseConfigured) {
+      const result = getMockMessages(conversationId);
+      const response: ApiResponse<PaginatedResponse<Message>> = {
+        success: true,
+        data: result,
+      };
+      return NextResponse.json(response);
+    }
 
     if (all) {
       // Return all messages without pagination

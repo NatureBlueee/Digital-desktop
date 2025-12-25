@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPublicConversations, getStarredConversations } from '@/lib/supabase/claude-database';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { ApiResponse } from '@/types';
+
+// Import real database functions
+import * as db from '@/lib/supabase/claude-database';
+// Import mock data functions
+import * as mock from '@/lib/mock/claude-data';
 
 /**
  * GET /api/claude/conversations
@@ -16,9 +21,34 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor') || undefined;
     const limit = searchParams.get('limit');
 
-    // Special case: get starred conversations only
+    // Use mock data if Supabase is not configured
+    if (!isSupabaseConfigured) {
+      if (starred === 'true' && !cursor) {
+        return NextResponse.json<ApiResponse>({
+          success: true,
+          data: {
+            data: mock.getMockStarredConversations(),
+            next_cursor: null,
+            has_more: false,
+          },
+        });
+      }
+
+      const result = mock.getMockConversations({
+        starred: starred === 'true' ? true : undefined,
+        tag,
+        limit: limit ? parseInt(limit, 10) : undefined,
+      });
+
+      return NextResponse.json<ApiResponse>({
+        success: true,
+        data: result,
+      });
+    }
+
+    // Use real database
     if (starred === 'true' && !cursor) {
-      const starredConversations = await getStarredConversations(
+      const starredConversations = await db.getStarredConversations(
         limit ? parseInt(limit, 10) : 10
       );
       return NextResponse.json<ApiResponse>({
@@ -31,7 +61,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const result = await getPublicConversations({
+    const result = await db.getPublicConversations({
       query,
       tag,
       starred: starred === 'true' ? true : starred === 'false' ? false : undefined,

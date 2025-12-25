@@ -3,7 +3,7 @@
  * Supabase database functions for Claude conversation archive
  */
 
-import { supabase } from './client';
+import { getSupabaseClient } from './client';
 import type {
   ClaudeConversationDB,
   ClaudeMessageDB,
@@ -64,7 +64,7 @@ export async function getPublicConversations(
 ): Promise<PaginatedResponse<ConversationListItem>> {
   const { query, tag, starred, project_id, cursor, limit = 30 } = params;
 
-  let queryBuilder = supabase
+  let queryBuilder = getSupabaseClient()
     .from('claude_conversations')
     .select('id, title, summary, created_at, updated_at, is_starred, tags, message_count, model, project_id')
     .eq('visibility', 'public')
@@ -115,7 +115,7 @@ export async function getStarredConversations(
   limit: number = 10
 ): Promise<ConversationListItem[]> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_conversations')
     .select('id, title, summary, created_at, updated_at, is_starred, tags, message_count, model, project_id')
     .eq('visibility', 'public')
@@ -137,7 +137,7 @@ export async function getConversationById(
   id: string
 ): Promise<Conversation | null> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_conversations')
     .select('*')
     .eq('id', id)
@@ -175,7 +175,7 @@ export async function getConversationByShareToken(
   token: string
 ): Promise<Conversation | null> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_conversations')
     .select('*')
     .eq('share_token', token)
@@ -230,7 +230,7 @@ async function resolveMessageAssets(
   // Fetch all assets in one query
   let assetMap: Record<string, ClaudeAssetDB> = {};
   if (assetIds.size > 0) {
-    const { data: assets, error } = await supabase
+    const { data: assets, error } = await getSupabaseClient()
       .from('claude_assets')
       .select('*')
       .in('id', Array.from(assetIds));
@@ -278,7 +278,7 @@ export async function getConversationMessages(
 ): Promise<PaginatedResponse<Message>> {
   const { cursor, limit = 50, direction = 'forward' } = params;
 
-  let queryBuilder = supabase
+  let queryBuilder = getSupabaseClient()
     .from('claude_messages')
     .select('id, role, created_at, order_index, content_md, assets')
     .eq('conversation_id', conversationId)
@@ -319,7 +319,7 @@ export async function getAllConversationMessages(
   conversationId: string
 ): Promise<Message[]> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_messages')
     .select('id, role, created_at, order_index, content_md, assets')
     .eq('conversation_id', conversationId)
@@ -344,7 +344,7 @@ export async function getArtifacts(
 ): Promise<PaginatedResponse<Artifact>> {
   const { type, conversation_id, cursor, limit = 20 } = params;
 
-  let queryBuilder = supabase
+  let queryBuilder = getSupabaseClient()
     .from('claude_artifacts')
     .select('*')
     .eq('visibility', 'public')
@@ -398,7 +398,7 @@ export async function getArtifactById(
   id: string
 ): Promise<Artifact | null> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_artifacts')
     .select('*')
     .eq('id', id)
@@ -439,7 +439,7 @@ export async function getProjects(
 ): Promise<PaginatedResponse<Project>> {
   const { cursor, limit = 20 } = params;
 
-  let queryBuilder = supabase
+  let queryBuilder = getSupabaseClient()
     .from('claude_projects')
     .select('*')
     .eq('visibility', 'public')
@@ -483,7 +483,7 @@ export async function getProjectById(
   id: string
 ): Promise<Project | null> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_projects')
     .select('*')
     .eq('id', id)
@@ -525,7 +525,7 @@ export async function searchMessages(
   // Try full-text search first, fallback to ILIKE
   const searchQuery = q.split(/\s+/).join(' & ');
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_messages')
     .select(`
       id,
@@ -544,7 +544,7 @@ export async function searchMessages(
 
   // If FTS fails or returns no results, try ILIKE
   if (error || !data || data.length === 0) {
-    const { data: iLikeData, error: iLikeError } = await supabase
+    const { data: iLikeData, error: iLikeError } = await getSupabaseClient()
       .from('claude_messages')
       .select(`
         id,
@@ -623,7 +623,7 @@ function formatSearchResults(
  */
 export async function getAllTags(): Promise<string[]> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_conversations')
     .select('tags')
     .eq('visibility', 'public');
@@ -661,7 +661,7 @@ export async function importProject(
   }
 ): Promise<string> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_projects')
     .insert({
       id: project.id,
@@ -697,7 +697,7 @@ export async function importConversation(
   }
 ): Promise<string> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_conversations')
     .insert({
       id: conversation.id,
@@ -749,7 +749,7 @@ export async function importMessages(
     assets: msg.assets || [],
   }));
 
-  const { error } = await supabase.from('claude_messages').insert(rows);
+  const { error } = await getSupabaseClient().from('claude_messages').insert(rows);
 
   if (error) {
     throw new Error(`Failed to import messages: ${error.message}`);
@@ -772,7 +772,7 @@ export async function importArtifact(
   }
 ): Promise<string> {
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('claude_artifacts')
     .insert({
       id: artifact.id,

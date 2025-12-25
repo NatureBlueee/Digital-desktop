@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { getSupabaseClient } from './client';
 import {
   ChatGPTConversationDB,
   ChatGPTMessageDB,
@@ -49,7 +49,7 @@ export async function getPublicConversations(
 ): Promise<PaginatedResponse<ConversationListItem>> {
   const { cursor, limit = DEFAULT_PAGE_SIZE, query, tag } = params;
 
-  let queryBuilder = supabase
+  let queryBuilder = getSupabaseClient()
     .from('chatgpt_conversations')
     .select('id, title, summary, created_at, updated_at, tags, message_count')
     .eq('visibility', 'public')
@@ -93,7 +93,7 @@ export async function getPublicConversations(
 export async function getConversationById(
   id: string
 ): Promise<ConversationDetail | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('chatgpt_conversations')
     .select('id, title, summary, created_at, updated_at, tags, message_count')
     .eq('id', id)
@@ -114,7 +114,7 @@ export async function getConversationById(
 export async function getConversationByShareToken(
   token: string
 ): Promise<ConversationDetail | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('chatgpt_conversations')
     .select('id, title, summary, created_at, updated_at, tags, message_count')
     .eq('share_token', token)
@@ -133,7 +133,7 @@ export async function getConversationByShareToken(
  * 获取所有标签（用于筛选器）
  */
 export async function getAllTags(): Promise<string[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('chatgpt_conversations')
     .select('tags')
     .eq('visibility', 'public');
@@ -168,7 +168,7 @@ export async function getConversationMessages(
     throw new Error('Conversation not found or not accessible');
   }
 
-  let queryBuilder = supabase
+  let queryBuilder = getSupabaseClient()
     .from('chatgpt_messages')
     .select('id, role, created_at, order_index, content_md, assets')
     .eq('conversation_id', conversationId)
@@ -208,7 +208,7 @@ export async function getConversationMessages(
 export async function getAllConversationMessages(
   conversationId: string
 ): Promise<Message[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('chatgpt_messages')
     .select('id, role, created_at, order_index, content_md, assets')
     .eq('conversation_id', conversationId)
@@ -245,7 +245,7 @@ async function resolveMessageAssets(
   }
 
   // Fetch assets
-  const { data: assets, error } = await supabase
+  const { data: assets, error } = await getSupabaseClient()
     .from('chatgpt_assets')
     .select('*')
     .in('id', Array.from(assetIds));
@@ -270,7 +270,7 @@ async function resolveMessageAssets(
         if (!asset) return null;
 
         // Get public URL from Supabase Storage
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = getSupabaseClient().storage
           .from('chatgpt-assets')
           .getPublicUrl(asset.storage_path);
 
@@ -315,7 +315,7 @@ export async function searchMessages(
 
   const offset = cursor ? parseInt(cursor, 10) : 0;
 
-  const { data, error } = await supabase.rpc('search_chatgpt_messages', {
+  const { data, error } = await getSupabaseClient().rpc('search_chatgpt_messages', {
     search_query: searchQuery,
     result_limit: limit + 1,
     result_offset: offset,
@@ -348,7 +348,7 @@ async function searchMessagesFallback(
   const offset = cursor ? parseInt(cursor, 10) : 0;
 
   // Get public conversation IDs first
-  const { data: publicConvs, error: convError } = await supabase
+  const { data: publicConvs, error: convError } = await getSupabaseClient()
     .from('chatgpt_conversations')
     .select('id, title')
     .eq('visibility', 'public');
@@ -365,7 +365,7 @@ async function searchMessagesFallback(
   }
 
   // Search messages
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('chatgpt_messages')
     .select('id, conversation_id, role, content_text')
     .in('conversation_id', publicIds)
@@ -425,7 +425,7 @@ function createSnippet(text: string, query: string, maxLength = 150): string {
 export async function upsertConversation(
   conversation: ChatGPTConversationDB
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await getSupabaseClient()
     .from('chatgpt_conversations')
     .upsert(conversation);
 
@@ -436,7 +436,7 @@ export async function upsertConversation(
  * 导入或更新消息
  */
 export async function upsertMessage(message: ChatGPTMessageDB): Promise<void> {
-  const { error } = await supabase.from('chatgpt_messages').upsert(message);
+  const { error } = await getSupabaseClient().from('chatgpt_messages').upsert(message);
 
   if (error) throw error;
 }
@@ -445,7 +445,7 @@ export async function upsertMessage(message: ChatGPTMessageDB): Promise<void> {
  * 导入资源（去重）
  */
 export async function upsertAsset(asset: ChatGPTAssetDB): Promise<void> {
-  const { error } = await supabase
+  const { error } = await getSupabaseClient()
     .from('chatgpt_assets')
     .upsert(asset, { onConflict: 'sha256' });
 
@@ -458,7 +458,7 @@ export async function upsertAsset(asset: ChatGPTAssetDB): Promise<void> {
 export async function getAssetBySha256(
   sha256: string
 ): Promise<ChatGPTAssetDB | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('chatgpt_assets')
     .select('*')
     .eq('sha256', sha256)
