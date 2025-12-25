@@ -6,6 +6,7 @@ import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
+import { AIIDEApp } from "@/components/apps/AIIDE";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -126,12 +127,16 @@ export default function WindowManager() {
               onMinimize={() => minimizeWindow(window.id)}
               onMaximize={() => maximizeWindow(window.id)}
               onFocus={() => focusWindow(window.id)}
-              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt'}
+              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'cursor' || window.appId === 'antigravity'}
             >
               {window.appId === 'claude' ? (
                 <ClaudeApp windowId={window.id} />
               ) : window.appId === 'chatgpt' ? (
                 <ChatGPTArchiveApp windowId={window.id} />
+              ) : window.appId === 'cursor' ? (
+                <AIIDEApp windowId={window.id} initialIDE="cursor" />
+              ) : window.appId === 'antigravity' ? (
+                <AIIDEApp windowId={window.id} initialIDE="antigravity" />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>
