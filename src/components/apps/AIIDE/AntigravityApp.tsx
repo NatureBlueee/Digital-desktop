@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { MenuBar, type MenuItemData } from '@/components/ui/Menu';
 import { ContextMenu, useContextMenu, type ContextMenuItemData } from '@/components/ui/ContextMenu';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useShowcaseProject } from './useShowcaseProject';
 import {
   Files,
   Search,
@@ -248,6 +249,13 @@ const createMenuConfig = (): { label: string; items: MenuItemData[] }[] => [
 export const AntigravityApp: React.FC<AntigravityAppProps> = ({ windowId }) => {
   const { closeWindow, minimizeWindow, maximizeWindow } = useDesktopStore();
 
+  // Load project data from Supabase (falls back to mock data)
+  const {
+    fileTree: projectFileTree,
+    fileContents: projectFileContents,
+    gitCommits: projectGitCommits,
+  } = useShowcaseProject();
+
   // State
   const [viewMode, setViewMode] = useState<'editor' | 'manager' | 'split'>('editor');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src', 'src/components']));
@@ -390,7 +398,7 @@ export const AntigravityApp: React.FC<AntigravityAppProps> = ({ windowId }) => {
               <span>my-project</span>
             </div>
             <FileTree
-              nodes={mockFileTree}
+              nodes={projectFileTree}
               expandedFolders={expandedFolders}
               onToggleFolder={toggleFolder}
               basePath=""
