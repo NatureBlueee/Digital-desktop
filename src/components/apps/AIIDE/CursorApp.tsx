@@ -6,7 +6,7 @@
  * - 集成 MenuBar, ContextMenu, Tooltip 组件
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useDesktopStore } from '@/lib/store/desktopStore';
 import { cn } from '@/lib/utils';
 import { MenuBar, type MenuItemData } from '@/components/ui/Menu';
@@ -14,6 +14,7 @@ import { ContextMenu, useContextMenu, type ContextMenuItemData } from '@/compone
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ResizeHandle, useResizable } from '@/components/ui/ResizeHandle';
 import { MarkdownPreview } from '@/components/ui/MarkdownPreview';
+import { useShowcaseProject, type GitCommitForDisplay } from './useShowcaseProject';
 import {
   Files,
   Search,
@@ -666,6 +667,15 @@ const createMenuConfig = (handlers: {
 export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
   const { closeWindow, minimizeWindow, maximizeWindow } = useDesktopStore();
 
+  // Load project data from Supabase (falls back to mock data)
+  const {
+    isLoading: isProjectLoading,
+    fileTree: projectFileTree,
+    fileContents: projectFileContents,
+    gitCommits: projectGitCommits,
+    getFileContent,
+  } = useShowcaseProject();
+
   // State
   const [activeTab, setActiveTab] = useState<string>('App.tsx');
   const [openTabs, setOpenTabs] = useState<OpenTab[]>([
@@ -911,7 +921,7 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
                     <span>my-app</span>
                   </div>
                   <FileTree
-                    nodes={mockFileTree}
+                    nodes={projectFileTree}
                     expandedFolders={expandedFolders}
                     onToggleFolder={toggleFolder}
                     onOpenFile={openFile}
@@ -931,7 +941,10 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
 
           {/* Git Panel */}
           {activeSidebarTab === 'git' && (
-            <GitPanel onOpenDiff={() => setShowDiffView(true)} />
+            <GitPanel
+              onOpenDiff={() => setShowDiffView(true)}
+              commits={projectGitCommits}
+            />
           )}
 
           {/* Debug Panel */}
@@ -1125,12 +1138,12 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
                 ) : activeTab && (
                   activeTab.endsWith('.md') && markdownPreviewMode[activeTab] ? (
                     <MarkdownPreview
-                      content={mockFileContents[activeTab] || '# No content'}
+                      content={projectFileContents[activeTab] || getFileContent(activeTab) || '# No content'}
                       className="h-full"
                     />
                   ) : (
                     <CodeEditor
-                      content={mockFileContents[activeTab] || '// File not found'}
+                      content={projectFileContents[activeTab] || getFileContent(activeTab) || '// File not found'}
                       language={openTabs.find(t => t.name === activeTab)?.language || 'text'}
                       onCursorChange={setCursorPosition}
                     />
@@ -1669,9 +1682,12 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ diff, mode = 'split', onClose }
 
 interface GitPanelProps {
   onOpenDiff?: () => void;
+  commits?: GitCommitForDisplay[];
 }
 
-const GitPanel: React.FC<GitPanelProps> = ({ onOpenDiff }) => {
+const GitPanel: React.FC<GitPanelProps> = ({ onOpenDiff, commits = [] }) => {
+  // Use passed commits or fall back to empty array
+  const gitCommits = commits;
   const [showTimeline, setShowTimeline] = useState(true);
   const [showChanges, setShowChanges] = useState(true);
   const [showStagedChanges, setShowStagedChanges] = useState(false);
@@ -1788,13 +1804,13 @@ const GitPanel: React.FC<GitPanelProps> = ({ onOpenDiff }) => {
 
           {showTimeline && (
             <div className="mt-1 space-y-0.5">
-              {mockGitTimeline.map((commit, index) => (
+              {gitCommits.map((commit, index) => (
                 <div
                   key={commit.hash}
                   className="relative group"
                 >
                   {/* Timeline connector line */}
-                  {index < mockGitTimeline.length - 1 && (
+                  {index < gitCommits.length - 1 && (
                     <div className="absolute left-[17px] top-6 bottom-0 w-px bg-[#404040]" />
                   )}
 
