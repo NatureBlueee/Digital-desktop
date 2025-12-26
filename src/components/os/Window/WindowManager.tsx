@@ -7,6 +7,7 @@ import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
 import { CursorApp } from "@/components/apps/AIIDE";
+import { NotionApp } from "@/components/apps/Notion";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -127,7 +128,7 @@ export default function WindowManager() {
               onMinimize={() => minimizeWindow(window.id)}
               onMaximize={() => maximizeWindow(window.id)}
               onFocus={() => focusWindow(window.id)}
-              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'cursor' || window.appId === 'antigravity'}
+              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'cursor' || window.appId === 'antigravity' || window.appId === 'notion'}
             >
               {window.appId === 'claude' ? (
                 <ClaudeApp windowId={window.id} />
@@ -137,6 +138,8 @@ export default function WindowManager() {
                 <CursorApp windowId={window.id} appType="cursor" />
               ) : window.appId === 'antigravity' ? (
                 <CursorApp windowId={window.id} appType="antigravity" />
+              ) : window.appId === 'notion' ? (
+                <NotionApp windowId={window.id} />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>
