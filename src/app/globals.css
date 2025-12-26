@@ -56,3 +56,62 @@ body {
 .window-resize-handle[style*="cursor: se-resize"]:hover {
   background-color: rgba(59, 130, 246, 0.6) !important;
 }
+
+/* ============================================================
+   IDE 自定义滚动条样式 - VS Code 风格
+   ============================================================ */
+
+/* Cursor IDE 滚动条 (深灰主题) */
+.ide-scrollbar::-webkit-scrollbar,
+[class*="bg-[#1e1e1e]"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.ide-scrollbar::-webkit-scrollbar-track,
+[class*="bg-[#1e1e1e]"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ide-scrollbar::-webkit-scrollbar-thumb,
+[class*="bg-[#1e1e1e]"] ::-webkit-scrollbar-thumb {
+  background: rgba(121, 121, 121, 0.4);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.ide-scrollbar::-webkit-scrollbar-thumb:hover,
+[class*="bg-[#1e1e1e]"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(121, 121, 121, 0.7);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* Antigravity IDE 滚动条 (GitHub 深色主题) */
+[class*="bg-[#0d1117]"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+[class*="bg-[#0d1117]"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[class*="bg-[#0d1117]"] ::-webkit-scrollbar-thumb {
+  background: rgba(110, 118, 129, 0.4);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+[class*="bg-[#0d1117]"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 118, 129, 0.7);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* 滚动条角落 (当水平和垂直滚动条同时存在时) */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

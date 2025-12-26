@@ -6,7 +6,7 @@ import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
-import { CursorApp } from "@/components/apps/AIIDE";
+import { CursorApp, AntigravityApp } from "@/components/apps/AIIDE";
 import { NotionApp } from "@/components/apps/Notion";
 
 export default function WindowManager() {
@@ -36,76 +36,80 @@ export default function WindowManager() {
             }}
             resizeHandleStyles={{
                 top: {
-                  height: '6px',
-                  top: '0px',
+                  height: '8px',
+                  top: '-4px',
+                  left: '8px',
+                  right: '8px',
+                  width: 'calc(100% - 16px)',
                   cursor: 'ns-resize',
-                  zIndex: 10,
+                  zIndex: 9999,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
                 bottom: {
-                  height: '6px',
-                  bottom: '0px',
+                  height: '8px',
+                  bottom: '-4px',
+                  left: '8px',
+                  right: '8px',
+                  width: 'calc(100% - 16px)',
                   cursor: 'ns-resize',
-                  zIndex: 10,
+                  zIndex: 9999,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
                 left: {
-                  width: '6px',
-                  left: '0px',
+                  width: '8px',
+                  left: '-4px',
+                  top: '8px',
+                  bottom: '8px',
+                  height: 'calc(100% - 16px)',
                   cursor: 'ew-resize',
-                  zIndex: 10,
+                  zIndex: 9999,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
                 right: {
-                  width: '6px',
-                  right: '0px',
+                  width: '8px',
+                  right: '-4px',
+                  top: '8px',
+                  bottom: '8px',
+                  height: 'calc(100% - 16px)',
                   cursor: 'ew-resize',
-                  zIndex: 10,
+                  zIndex: 9999,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
                 topRight: {
-                  width: '12px',
-                  height: '12px',
-                  right: '0px',
-                  top: '0px',
+                  width: '16px',
+                  height: '16px',
+                  right: '-4px',
+                  top: '-4px',
                   cursor: 'ne-resize',
-                  zIndex: 20,
+                  zIndex: 10000,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
                 topLeft: {
-                  width: '12px',
-                  height: '12px',
-                  left: '0px',
-                  top: '0px',
+                  width: '16px',
+                  height: '16px',
+                  left: '-4px',
+                  top: '-4px',
                   cursor: 'nw-resize',
-                  zIndex: 20,
+                  zIndex: 10000,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
                 bottomRight: {
-                  width: '12px',
-                  height: '12px',
-                  right: '0px',
-                  bottom: '0px',
+                  width: '16px',
+                  height: '16px',
+                  right: '-4px',
+                  bottom: '-4px',
                   cursor: 'se-resize',
-                  zIndex: 20,
+                  zIndex: 10000,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
                 bottomLeft: {
-                  width: '12px',
-                  height: '12px',
-                  left: '0px',
-                  bottom: '0px',
+                  width: '16px',
+                  height: '16px',
+                  left: '-4px',
+                  bottom: '-4px',
                   cursor: 'sw-resize',
-                  zIndex: 20,
+                  zIndex: 10000,
                   background: 'transparent',
-                  transition: 'background-color 0.2s ease'
                 },
             }}
             resizeHandleClasses={{
@@ -137,7 +141,7 @@ export default function WindowManager() {
               ) : window.appId === 'cursor' ? (
                 <CursorApp windowId={window.id} appType="cursor" />
               ) : window.appId === 'antigravity' ? (
-                <CursorApp windowId={window.id} appType="antigravity" />
+                <AntigravityApp windowId={window.id} />
               ) : window.appId === 'notion' ? (
                 <NotionApp windowId={window.id} />
               ) : (
