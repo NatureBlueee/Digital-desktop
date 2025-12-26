@@ -12,10 +12,13 @@ import { cn } from '@/lib/utils';
 import { MenuBar, type MenuItemData } from '@/components/ui/Menu';
 import { ContextMenu, useContextMenu, type ContextMenuItemData } from '@/components/ui/ContextMenu';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ResizeHandle, useResizable } from '@/components/ui/ResizeHandle';
+import { MarkdownPreview } from '@/components/ui/MarkdownPreview';
 import {
   Files,
   Search,
   GitBranch,
+  GitCommit,
   Bug,
   Blocks,
   Settings,
@@ -52,6 +55,8 @@ import {
   Eye,
   Code,
   SplitSquareHorizontal,
+  Clock,
+  History,
 } from 'lucide-react';
 
 // ============================================================
@@ -82,6 +87,33 @@ interface OpenTab {
   path: string;
   language: string;
   isModified?: boolean;
+}
+
+interface GitCommitData {
+  hash: string;
+  shortHash: string;
+  message: string;
+  author: string;
+  date: string;
+  relativeDate: string;
+  branch?: string;
+  isMerge?: boolean;
+}
+
+interface DiffLine {
+  type: 'added' | 'removed' | 'unchanged' | 'header';
+  content: string;
+  oldLineNum?: number;
+  newLineNum?: number;
+}
+
+interface FileDiff {
+  fileName: string;
+  oldPath: string;
+  newPath: string;
+  additions: number;
+  deletions: number;
+  lines: DiffLine[];
 }
 
 // ============================================================
@@ -314,6 +346,111 @@ interface ButtonProps {
   },
 ];
 
+// Mock Git Timeline Data (simulating git log output)
+const mockGitTimeline: GitCommitData[] = [
+  {
+    hash: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6',
+    shortHash: 'a1b2c3d',
+    message: 'feat: add Button component with variants',
+    author: 'John Doe',
+    date: '2024-12-25 14:30:00',
+    relativeDate: '2 hours ago',
+    branch: 'main',
+  },
+  {
+    hash: 'b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7',
+    shortHash: 'b2c3d4e',
+    message: 'fix: resolve authentication token refresh issue',
+    author: 'Jane Smith',
+    date: '2024-12-25 12:15:00',
+    relativeDate: '4 hours ago',
+  },
+  {
+    hash: 'c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8',
+    shortHash: 'c3d4e5f',
+    message: 'refactor: extract useAuth hook from App component',
+    author: 'John Doe',
+    date: '2024-12-25 10:00:00',
+    relativeDate: '6 hours ago',
+  },
+  {
+    hash: 'd4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9',
+    shortHash: 'd4e5f6g',
+    message: 'Merge pull request #42 from feature/card-component',
+    author: 'John Doe',
+    date: '2024-12-24 16:45:00',
+    relativeDate: 'Yesterday',
+    isMerge: true,
+  },
+  {
+    hash: 'e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0',
+    shortHash: 'e5f6g7h',
+    message: 'feat: implement Card component with shadow variants',
+    author: 'Alice Wang',
+    date: '2024-12-24 15:30:00',
+    relativeDate: 'Yesterday',
+    branch: 'feature/card-component',
+  },
+  {
+    hash: 'f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1',
+    shortHash: 'f6g7h8i',
+    message: 'docs: update README with setup instructions',
+    author: 'Jane Smith',
+    date: '2024-12-24 11:20:00',
+    relativeDate: 'Yesterday',
+  },
+  {
+    hash: 'g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2',
+    shortHash: 'g7h8i9j',
+    message: 'chore: configure TypeScript strict mode',
+    author: 'John Doe',
+    date: '2024-12-23 09:15:00',
+    relativeDate: '2 days ago',
+  },
+  {
+    hash: 'h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3',
+    shortHash: 'h8i9j0k',
+    message: 'initial commit',
+    author: 'John Doe',
+    date: '2024-12-22 10:00:00',
+    relativeDate: '3 days ago',
+    branch: 'main',
+  },
+];
+
+// Mock Diff Data
+const mockFileDiff: FileDiff = {
+  fileName: 'App.tsx',
+  oldPath: 'src/App.tsx',
+  newPath: 'src/App.tsx',
+  additions: 8,
+  deletions: 3,
+  lines: [
+    { type: 'header', content: '@@ -1,15 +1,20 @@' },
+    { type: 'unchanged', content: "import React from 'react';", oldLineNum: 1, newLineNum: 1 },
+    { type: 'unchanged', content: "import { Button } from './components/Button';", oldLineNum: 2, newLineNum: 2 },
+    { type: 'removed', content: "import { Card } from './components/Card';", oldLineNum: 3 },
+    { type: 'added', content: "import { Card } from './components/Card';", newLineNum: 3 },
+    { type: 'added', content: "import { Input } from './components/Input';", newLineNum: 4 },
+    { type: 'unchanged', content: "import { useAuth } from './hooks/useAuth';", oldLineNum: 4, newLineNum: 5 },
+    { type: 'added', content: "import { useForm } from './hooks/useForm';", newLineNum: 6 },
+    { type: 'unchanged', content: "import './styles.css';", oldLineNum: 5, newLineNum: 7 },
+    { type: 'unchanged', content: '', oldLineNum: 6, newLineNum: 8 },
+    { type: 'unchanged', content: 'function App() {', oldLineNum: 7, newLineNum: 9 },
+    { type: 'unchanged', content: '  const { user, login, logout } = useAuth();', oldLineNum: 8, newLineNum: 10 },
+    { type: 'added', content: '  const { values, handleChange } = useForm();', newLineNum: 11 },
+    { type: 'unchanged', content: '', oldLineNum: 9, newLineNum: 12 },
+    { type: 'unchanged', content: '  return (', oldLineNum: 10, newLineNum: 13 },
+    { type: 'unchanged', content: '    <div className="app">', oldLineNum: 11, newLineNum: 14 },
+    { type: 'removed', content: '      <header className="app-header">', oldLineNum: 12 },
+    { type: 'added', content: '      <header className="app-header bg-gradient-to-r from-blue-500 to-purple-600">', newLineNum: 15 },
+    { type: 'removed', content: '        <h1>Welcome to My App</h1>', oldLineNum: 13 },
+    { type: 'added', content: '        <h1 className="text-white text-2xl font-bold">Welcome to My App</h1>', newLineNum: 16 },
+    { type: 'added', content: '        <Input value={values.search} onChange={handleChange} />', newLineNum: 17 },
+    { type: 'unchanged', content: '        {user ? (', oldLineNum: 14, newLineNum: 18 },
+  ],
+};
+
 // ============================================================
 // Menu Configuration
 // ============================================================
@@ -539,6 +676,13 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
   const [showTerminal, setShowTerminal] = useState(true);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'files' | 'search' | 'git' | 'debug' | 'extensions'>('files');
   const [cursorPosition, setCursorPosition] = useState({ line: 1, col: 1 });
+  const [markdownPreviewMode, setMarkdownPreviewMode] = useState<Record<string, boolean>>({});
+  const [showDiffView, setShowDiffView] = useState(false);
+
+  // Resizable panels
+  const sidebar = useResizable(240, { minSize: 180, maxSize: 400 });
+  const chatPanel = useResizable(320, { minSize: 280, maxSize: 500 });
+  const terminalPanel = useResizable(192, { minSize: 100, maxSize: 400 });
 
   // Context menus
   const fileContextMenu = useContextMenu();
@@ -731,7 +875,10 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
         </div>
 
         {/* Sidebar */}
-        <div className="w-60 bg-[#252526] flex flex-col border-r border-[#1e1e1e]">
+        <div
+          className="bg-[#252526] flex flex-col border-r border-[#1e1e1e]"
+          style={{ width: sidebar.size }}
+        >
           {/* Explorer Panel */}
           {activeSidebarTab === 'files' && (
             <>
@@ -779,126 +926,12 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
 
           {/* Search Panel */}
           {activeSidebarTab === 'search' && (
-            <>
-              <div className="flex items-center justify-between px-4 py-2">
-                <span className="text-xs text-[#bbbbbb] uppercase tracking-wider font-semibold">
-                  Search
-                </span>
-                <div className="flex items-center gap-1">
-                  <Tooltip content="Refresh">
-                    <button className="p-1 hover:bg-[#3c3c3c] rounded text-[#c5c5c5]">
-                      <RefreshCw size={16} />
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-              <div className="px-3 py-2 space-y-2">
-                <div className="flex items-center bg-[#3c3c3c] rounded px-2">
-                  <Search size={14} className="text-[#858585]" />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="flex-1 bg-transparent text-xs py-1.5 px-2 outline-none text-white placeholder:text-[#858585]"
-                  />
-                </div>
-                <div className="flex items-center bg-[#3c3c3c] rounded px-2">
-                  <Replace size={14} className="text-[#858585]" />
-                  <input
-                    type="text"
-                    placeholder="Replace"
-                    className="flex-1 bg-transparent text-xs py-1.5 px-2 outline-none text-white placeholder:text-[#858585]"
-                  />
-                </div>
-                <div className="flex items-center gap-1 text-xs text-[#858585]">
-                  <button className="p-1 hover:bg-[#3c3c3c] rounded" title="Match Case">Aa</button>
-                  <button className="p-1 hover:bg-[#3c3c3c] rounded" title="Match Whole Word">Ab</button>
-                  <button className="p-1 hover:bg-[#3c3c3c] rounded" title="Use Regular Expression">.*</button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-auto px-3">
-                <div className="text-xs text-[#858585] py-4 text-center">
-                  Enter search term and press Enter
-                </div>
-              </div>
-            </>
+            <SearchPanel />
           )}
 
           {/* Git Panel */}
           {activeSidebarTab === 'git' && (
-            <>
-              <div className="flex items-center justify-between px-4 py-2">
-                <span className="text-xs text-[#bbbbbb] uppercase tracking-wider font-semibold">
-                  Source Control
-                </span>
-                <div className="flex items-center gap-1">
-                  <Tooltip content="Commit">
-                    <button className="p-1 hover:bg-[#3c3c3c] rounded text-[#c5c5c5]">
-                      <Check size={16} />
-                    </button>
-                  </Tooltip>
-                  <Tooltip content="Refresh">
-                    <button className="p-1 hover:bg-[#3c3c3c] rounded text-[#c5c5c5]">
-                      <RefreshCw size={16} />
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-              <div className="px-3 py-2">
-                <input
-                  type="text"
-                  placeholder="Message (Ctrl+Enter to commit)"
-                  className="w-full bg-[#3c3c3c] text-xs py-1.5 px-2 rounded outline-none text-white placeholder:text-[#858585]"
-                />
-              </div>
-              <div className="flex-1 overflow-auto px-2">
-                <div className="flex items-center gap-1 px-2 py-1 text-xs text-[#bbbbbb] uppercase font-semibold">
-                  <ChevronDown size={16} />
-                  <span>Changes</span>
-                  <span className="ml-auto text-[#858585]">2</span>
-                </div>
-                <div className="pl-4 space-y-0.5">
-                  <div className="flex items-center gap-2 px-2 py-1 hover:bg-[#2a2d2e] rounded cursor-pointer group">
-                    <span className="text-yellow-500 text-xs font-bold w-3">M</span>
-                    <FileCode size={14} className="text-blue-400" />
-                    <span className="text-xs flex-1 truncate">App.tsx</span>
-                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
-                      <Tooltip content="Discard Changes">
-                        <button className="p-0.5 hover:bg-[#404040] rounded">
-                          <RotateCcw size={12} />
-                        </button>
-                      </Tooltip>
-                      <Tooltip content="Stage Changes">
-                        <button className="p-0.5 hover:bg-[#404040] rounded">
-                          <FilePlus size={12} />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 px-2 py-1 hover:bg-[#2a2d2e] rounded cursor-pointer group">
-                    <span className="text-green-500 text-xs font-bold w-3">A</span>
-                    <FileCode size={14} className="text-blue-400" />
-                    <span className="text-xs flex-1 truncate">Button.tsx</span>
-                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
-                      <Tooltip content="Discard Changes">
-                        <button className="p-0.5 hover:bg-[#404040] rounded">
-                          <RotateCcw size={12} />
-                        </button>
-                      </Tooltip>
-                      <Tooltip content="Stage Changes">
-                        <button className="p-0.5 hover:bg-[#404040] rounded">
-                          <FilePlus size={12} />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 px-2 py-1 mt-2 text-xs text-[#bbbbbb] uppercase font-semibold">
-                  <ChevronRight size={16} />
-                  <span>Staged Changes</span>
-                  <span className="ml-auto text-[#858585]">0</span>
-                </div>
-              </div>
-            </>
+            <GitPanel onOpenDiff={() => setShowDiffView(true)} />
           )}
 
           {/* Debug Panel */}
@@ -997,6 +1030,15 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
           )}
         </div>
 
+        {/* Sidebar Resize Handle */}
+        <ResizeHandle
+          direction="horizontal"
+          onResize={sidebar.handleResize}
+          currentSize={sidebar.size}
+          minSize={180}
+          maxSize={400}
+        />
+
         {/* Main Editor Area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Tabs */}
@@ -1033,28 +1075,108 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
 
           {/* Editor Content */}
           <div className="flex-1 flex overflow-hidden">
-            <div
-              className="flex-1 overflow-auto bg-[#1e1e1e]"
-              onContextMenu={handleEditorContextMenu}
-            >
-              {activeTab && (
-                <CodeEditor
-                  content={mockFileContents[activeTab] || '// File not found'}
-                  language={openTabs.find(t => t.name === activeTab)?.language || 'text'}
-                  onCursorChange={setCursorPosition}
-                />
+            <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e1e]">
+              {/* Markdown Preview Toggle */}
+              {activeTab?.endsWith('.md') && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-[#252526] border-b border-[#1e1e1e]">
+                  <button
+                    onClick={() => setMarkdownPreviewMode(prev => ({
+                      ...prev,
+                      [activeTab]: false
+                    }))}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors",
+                      !markdownPreviewMode[activeTab]
+                        ? "bg-[#3c3c3c] text-white"
+                        : "text-[#858585] hover:text-white"
+                    )}
+                  >
+                    <Code size={12} />
+                    Source
+                  </button>
+                  <button
+                    onClick={() => setMarkdownPreviewMode(prev => ({
+                      ...prev,
+                      [activeTab]: true
+                    }))}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors",
+                      markdownPreviewMode[activeTab]
+                        ? "bg-[#3c3c3c] text-white"
+                        : "text-[#858585] hover:text-white"
+                    )}
+                  >
+                    <Eye size={12} />
+                    Preview
+                  </button>
+                </div>
               )}
+
+              {/* Editor or Preview or Diff */}
+              <div
+                className="flex-1 overflow-auto"
+                onContextMenu={handleEditorContextMenu}
+              >
+                {showDiffView ? (
+                  <DiffViewer
+                    diff={mockFileDiff}
+                    onClose={() => setShowDiffView(false)}
+                  />
+                ) : activeTab && (
+                  activeTab.endsWith('.md') && markdownPreviewMode[activeTab] ? (
+                    <MarkdownPreview
+                      content={mockFileContents[activeTab] || '# No content'}
+                      className="h-full"
+                    />
+                  ) : (
+                    <CodeEditor
+                      content={mockFileContents[activeTab] || '// File not found'}
+                      language={openTabs.find(t => t.name === activeTab)?.language || 'text'}
+                      onCursorChange={setCursorPosition}
+                    />
+                  )
+                )}
+              </div>
             </div>
 
             {/* Chat Panel */}
             {showChat && (
-              <ChatPanel onClose={() => setShowChat(false)} appType={appType} />
+              <>
+                <ResizeHandle
+                  direction="horizontal"
+                  onResize={chatPanel.handleResize}
+                  currentSize={chatPanel.size}
+                  minSize={280}
+                  maxSize={500}
+                  reverse
+                />
+                <ChatPanel
+                  onClose={() => setShowChat(false)}
+                  appType={appType}
+                  width={chatPanel.size}
+                />
+              </>
             )}
           </div>
 
+          {/* Terminal Resize Handle */}
+          {showTerminal && (
+            <ResizeHandle
+              direction="vertical"
+              onResize={terminalPanel.handleResize}
+              currentSize={terminalPanel.size}
+              minSize={100}
+              maxSize={400}
+              reverse
+            />
+          )}
+
           {/* Terminal Panel */}
           {showTerminal && (
-            <div className="h-48 bg-[#1e1e1e] border-t border-[#414141]">
+            <div
+              className="bg-[#1e1e1e] border-t border-[#414141]"
+              style={{ height: terminalPanel.size }}
+            >
               <div className="flex items-center h-8 bg-[#252526] px-2 border-b border-[#414141]">
                 <button className="flex items-center gap-1 px-2 py-1 text-xs bg-[#1e1e1e] text-white rounded-t border-t border-l border-r border-[#414141]">
                   <TerminalIcon size={12} />
@@ -1137,6 +1259,614 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
       <ContextMenu state={editorContextMenu.state} items={editorContextMenuItems} onClose={editorContextMenu.close} />
       <ContextMenu state={tabContextMenu.state} items={tabContextMenuItems} onClose={tabContextMenu.close} />
     </div>
+  );
+};
+
+// ============================================================
+// Search Panel Component
+// ============================================================
+
+interface SearchResult {
+  file: string;
+  path: string;
+  matches: { line: number; content: string; column: number }[];
+}
+
+// Mock search results based on user's screenshot style
+const mockSearchResults: SearchResult[] = [
+  {
+    file: 'App.tsx',
+    path: 'src/App.tsx',
+    matches: [
+      { line: 5, content: "import { Button } from './components/Button';", column: 15 },
+      { line: 12, content: "  const { user, login, logout } = useAuth();", column: 25 },
+    ],
+  },
+  {
+    file: 'Button.tsx',
+    path: 'src/components/Button.tsx',
+    matches: [
+      { line: 1, content: "import React from 'react';", column: 8 },
+      { line: 8, content: "  variant?: 'primary' | 'secondary' | 'danger';", column: 12 },
+      { line: 15, content: "    <button className={`btn btn-${variant}`}>", column: 22 },
+    ],
+  },
+  {
+    file: 'useAuth.ts',
+    path: 'src/hooks/useAuth.ts',
+    matches: [
+      { line: 1, content: "import { useState, useCallback } from 'react';", column: 20 },
+    ],
+  },
+];
+
+const SearchPanel: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set(['src/App.tsx', 'src/components/Button.tsx']));
+  const [results, setResults] = useState<SearchResult[]>([]);
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      // Simulate search - in real app would search through files
+      setResults(mockSearchResults);
+    }
+  };
+
+  const toggleFile = (path: string) => {
+    setExpandedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+
+  // Highlight search term in text
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span key={i} className="bg-purple-500/30 text-purple-300">{part}</span>
+      ) : (
+        part
+      )
+    );
+  };
+
+  const totalMatches = results.reduce((sum, r) => sum + r.matches.length, 0);
+  const totalFiles = results.length;
+
+  return (
+    <>
+      <div className="flex items-center justify-between px-4 py-2">
+        <span className="text-xs text-[#bbbbbb] uppercase tracking-wider font-semibold">
+          Code Search
+        </span>
+        <div className="flex items-center gap-1">
+          <Tooltip content="Refresh">
+            <button className="p-1 hover:bg-[#3c3c3c] rounded text-[#c5c5c5]">
+              <RefreshCw size={16} />
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+
+      <div className="px-3 py-2 space-y-2">
+        <div className="flex items-center bg-[#3c3c3c] rounded px-2">
+          <Search size={14} className="text-[#858585]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearch}
+            placeholder="Search"
+            className="flex-1 bg-transparent text-xs py-1.5 px-2 outline-none text-white placeholder:text-[#858585]"
+          />
+          <span className="text-[10px] text-[#666] px-1">Aa</span>
+          <span className="text-[10px] text-[#666] px-1">ab</span>
+          <span className="text-[10px] text-[#666] px-1">.*</span>
+        </div>
+      </div>
+
+      {/* Results Summary */}
+      {results.length > 0 && (
+        <div className="px-3 py-1 text-xs text-[#858585]">
+          {totalMatches} results in {totalFiles} files
+        </div>
+      )}
+
+      {/* Search Results */}
+      <div className="flex-1 overflow-auto px-2">
+        {results.length === 0 ? (
+          <div className="text-xs text-[#858585] py-4 text-center">
+            {searchQuery ? 'No results found' : 'Enter search term and press Enter'}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {results.map(result => (
+              <div key={result.path}>
+                {/* File Header */}
+                <button
+                  onClick={() => toggleFile(result.path)}
+                  className="flex items-center gap-1 w-full px-2 py-1 hover:bg-[#2a2d2e] rounded text-left"
+                >
+                  {expandedFiles.has(result.path) ? (
+                    <ChevronDown size={14} />
+                  ) : (
+                    <ChevronRight size={14} />
+                  )}
+                  <FileCode size={14} className="text-blue-400" />
+                  <span className="text-xs text-white flex-1 truncate">{result.file}</span>
+                  <span className="w-5 h-5 flex items-center justify-center bg-[#3c3c3c] rounded-full text-[10px] text-[#cccccc]">
+                    {result.matches.length}
+                  </span>
+                </button>
+
+                {/* Match Lines */}
+                {expandedFiles.has(result.path) && (
+                  <div className="pl-6 space-y-0.5">
+                    {result.matches.map((match, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 px-2 py-1 hover:bg-[#2a2d2e] rounded cursor-pointer text-xs"
+                      >
+                        <span className="text-[#666] w-4 text-right shrink-0">{match.line}</span>
+                        <span className="text-[#cccccc] truncate">
+                          {highlightText(match.content, searchQuery)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+// ============================================================
+// Diff Viewer Component
+// ============================================================
+
+interface DiffViewerProps {
+  diff: FileDiff;
+  mode?: 'split' | 'inline';
+  onClose?: () => void;
+}
+
+const DiffViewer: React.FC<DiffViewerProps> = ({ diff, mode = 'split', onClose }) => {
+  const [viewMode, setViewMode] = useState<'split' | 'inline'>(mode);
+
+  // For split view, we need to pair up lines
+  const getSplitLines = () => {
+    const pairs: { left: DiffLine | null; right: DiffLine | null }[] = [];
+    let leftIdx = 0;
+    let rightIdx = 0;
+
+    const leftLines = diff.lines.filter(l => l.type === 'removed' || l.type === 'unchanged' || l.type === 'header');
+    const rightLines = diff.lines.filter(l => l.type === 'added' || l.type === 'unchanged' || l.type === 'header');
+
+    // Simple pairing - in real app, would use proper diff algorithm
+    diff.lines.forEach((line) => {
+      if (line.type === 'header') {
+        pairs.push({ left: line, right: line });
+      } else if (line.type === 'unchanged') {
+        pairs.push({ left: line, right: line });
+      } else if (line.type === 'removed') {
+        pairs.push({ left: line, right: null });
+      } else if (line.type === 'added') {
+        // Try to pair with previous null right
+        const lastPair = pairs[pairs.length - 1];
+        if (lastPair && lastPair.right === null) {
+          lastPair.right = line;
+        } else {
+          pairs.push({ left: null, right: line });
+        }
+      }
+    });
+
+    return pairs;
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#1e1e1e]">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-[#252526] border-b border-[#404040]">
+        <FileCode size={14} className="text-blue-400" />
+        <span className="text-xs text-white">{diff.fileName}</span>
+        <span className="text-xs text-green-400">+{diff.additions}</span>
+        <span className="text-xs text-red-400">-{diff.deletions}</span>
+        <div className="flex-1" />
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 bg-[#3c3c3c] rounded p-0.5">
+          <button
+            onClick={() => setViewMode('split')}
+            className={cn(
+              "px-2 py-0.5 text-xs rounded transition-colors",
+              viewMode === 'split'
+                ? "bg-[#0e639c] text-white"
+                : "text-[#858585] hover:text-white"
+            )}
+          >
+            Split
+          </button>
+          <button
+            onClick={() => setViewMode('inline')}
+            className={cn(
+              "px-2 py-0.5 text-xs rounded transition-colors",
+              viewMode === 'inline'
+                ? "bg-[#0e639c] text-white"
+                : "text-[#858585] hover:text-white"
+            )}
+          >
+            Inline
+          </button>
+        </div>
+
+        {onClose && (
+          <button onClick={onClose} className="p-1 hover:bg-[#404040] rounded">
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Diff Content */}
+      <div className="flex-1 overflow-auto font-mono text-xs">
+        {viewMode === 'inline' ? (
+          // Inline View
+          <div className="flex">
+            {/* Line Numbers */}
+            <div className="flex flex-col bg-[#1e1e1e] border-r border-[#404040] select-none sticky left-0">
+              {diff.lines.map((line, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex h-5 text-[#858585]",
+                    line.type === 'added' && "bg-green-900/20",
+                    line.type === 'removed' && "bg-red-900/20",
+                    line.type === 'header' && "bg-blue-900/20"
+                  )}
+                >
+                  <span className="w-10 text-right pr-2">
+                    {line.oldLineNum || ''}
+                  </span>
+                  <span className="w-10 text-right pr-2 border-r border-[#404040]">
+                    {line.newLineNum || ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1">
+              {diff.lines.map((line, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-5 flex items-center px-2",
+                    line.type === 'added' && "bg-green-900/30 text-green-300",
+                    line.type === 'removed' && "bg-red-900/30 text-red-300",
+                    line.type === 'unchanged' && "text-[#d4d4d4]",
+                    line.type === 'header' && "bg-blue-900/30 text-blue-300"
+                  )}
+                >
+                  <span className="w-4 text-center mr-2">
+                    {line.type === 'added' && '+'}
+                    {line.type === 'removed' && '-'}
+                  </span>
+                  <span className="whitespace-pre">{line.content || '\u00A0'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          // Split View
+          <div className="flex">
+            {/* Left Side (Old) */}
+            <div className="flex-1 border-r border-[#404040]">
+              <div className="flex">
+                {/* Line Numbers */}
+                <div className="flex flex-col bg-[#1e1e1e] border-r border-[#404040] select-none">
+                  {getSplitLines().map((pair, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "h-5 w-10 text-right pr-2 text-[#858585]",
+                        pair.left?.type === 'removed' && "bg-red-900/20",
+                        pair.left?.type === 'header' && "bg-blue-900/20"
+                      )}
+                    >
+                      {pair.left?.oldLineNum || ''}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {getSplitLines().map((pair, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "h-5 flex items-center px-2 whitespace-pre overflow-hidden",
+                        pair.left?.type === 'removed' && "bg-red-900/30 text-red-300",
+                        pair.left?.type === 'unchanged' && "text-[#d4d4d4]",
+                        pair.left?.type === 'header' && "bg-blue-900/30 text-blue-300",
+                        !pair.left && "bg-[#1a1a1a]"
+                      )}
+                    >
+                      {pair.left?.type === 'removed' && (
+                        <span className="w-4 text-center mr-2">-</span>
+                      )}
+                      {pair.left?.type !== 'removed' && pair.left && (
+                        <span className="w-4 mr-2" />
+                      )}
+                      {pair.left?.content || '\u00A0'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side (New) */}
+            <div className="flex-1">
+              <div className="flex">
+                {/* Line Numbers */}
+                <div className="flex flex-col bg-[#1e1e1e] border-r border-[#404040] select-none">
+                  {getSplitLines().map((pair, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "h-5 w-10 text-right pr-2 text-[#858585]",
+                        pair.right?.type === 'added' && "bg-green-900/20",
+                        pair.right?.type === 'header' && "bg-blue-900/20"
+                      )}
+                    >
+                      {pair.right?.newLineNum || ''}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {getSplitLines().map((pair, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        "h-5 flex items-center px-2 whitespace-pre overflow-hidden",
+                        pair.right?.type === 'added' && "bg-green-900/30 text-green-300",
+                        pair.right?.type === 'unchanged' && "text-[#d4d4d4]",
+                        pair.right?.type === 'header' && "bg-blue-900/30 text-blue-300",
+                        !pair.right && "bg-[#1a1a1a]"
+                      )}
+                    >
+                      {pair.right?.type === 'added' && (
+                        <span className="w-4 text-center mr-2">+</span>
+                      )}
+                      {pair.right?.type !== 'added' && pair.right && (
+                        <span className="w-4 mr-2" />
+                      )}
+                      {pair.right?.content || '\u00A0'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// Git Panel Component with Timeline
+// ============================================================
+
+interface GitPanelProps {
+  onOpenDiff?: () => void;
+}
+
+const GitPanel: React.FC<GitPanelProps> = ({ onOpenDiff }) => {
+  const [showTimeline, setShowTimeline] = useState(true);
+  const [showChanges, setShowChanges] = useState(true);
+  const [showStagedChanges, setShowStagedChanges] = useState(false);
+  const [commitMessage, setCommitMessage] = useState('');
+
+  return (
+    <>
+      <div className="flex items-center justify-between px-4 py-2">
+        <span className="text-xs text-[#bbbbbb] uppercase tracking-wider font-semibold">
+          Source Control
+        </span>
+        <div className="flex items-center gap-1">
+          <Tooltip content="Commit">
+            <button className="p-1 hover:bg-[#3c3c3c] rounded text-[#c5c5c5]">
+              <Check size={16} />
+            </button>
+          </Tooltip>
+          <Tooltip content="Refresh">
+            <button className="p-1 hover:bg-[#3c3c3c] rounded text-[#c5c5c5]">
+              <RefreshCw size={16} />
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+
+      {/* Commit Message Input */}
+      <div className="px-3 py-2">
+        <input
+          type="text"
+          value={commitMessage}
+          onChange={(e) => setCommitMessage(e.target.value)}
+          placeholder="Message (Ctrl+Enter to commit)"
+          className="w-full bg-[#3c3c3c] text-xs py-1.5 px-2 rounded outline-none text-white placeholder:text-[#858585]"
+        />
+      </div>
+
+      <div className="flex-1 overflow-auto px-2">
+        {/* Changes Section */}
+        <button
+          onClick={() => setShowChanges(!showChanges)}
+          className="flex items-center gap-1 w-full px-2 py-1 text-xs text-[#bbbbbb] uppercase font-semibold hover:bg-[#2a2d2e] rounded"
+        >
+          {showChanges ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <span>Changes</span>
+          <span className="ml-auto text-[#858585]">2</span>
+        </button>
+
+        {showChanges && (
+          <div className="pl-4 space-y-0.5">
+            <div
+              onClick={onOpenDiff}
+              className="flex items-center gap-2 px-2 py-1 hover:bg-[#2a2d2e] rounded cursor-pointer group"
+            >
+              <span className="text-yellow-500 text-xs font-bold w-3">M</span>
+              <FileCode size={14} className="text-blue-400" />
+              <span className="text-xs flex-1 truncate">App.tsx</span>
+              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+                <Tooltip content="Discard Changes">
+                  <button className="p-0.5 hover:bg-[#404040] rounded" onClick={(e) => e.stopPropagation()}>
+                    <RotateCcw size={12} />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Stage Changes">
+                  <button className="p-0.5 hover:bg-[#404040] rounded" onClick={(e) => e.stopPropagation()}>
+                    <FilePlus size={12} />
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+            <div
+              onClick={onOpenDiff}
+              className="flex items-center gap-2 px-2 py-1 hover:bg-[#2a2d2e] rounded cursor-pointer group"
+            >
+              <span className="text-green-500 text-xs font-bold w-3">A</span>
+              <FileCode size={14} className="text-blue-400" />
+              <span className="text-xs flex-1 truncate">Button.tsx</span>
+              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+                <Tooltip content="Discard Changes">
+                  <button className="p-0.5 hover:bg-[#404040] rounded" onClick={(e) => e.stopPropagation()}>
+                    <RotateCcw size={12} />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Stage Changes">
+                  <button className="p-0.5 hover:bg-[#404040] rounded" onClick={(e) => e.stopPropagation()}>
+                    <FilePlus size={12} />
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Staged Changes Section */}
+        <button
+          onClick={() => setShowStagedChanges(!showStagedChanges)}
+          className="flex items-center gap-1 w-full px-2 py-1 mt-2 text-xs text-[#bbbbbb] uppercase font-semibold hover:bg-[#2a2d2e] rounded"
+        >
+          {showStagedChanges ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <span>Staged Changes</span>
+          <span className="ml-auto text-[#858585]">0</span>
+        </button>
+
+        {/* Timeline Section */}
+        <div className="mt-4 border-t border-[#404040] pt-2">
+          <button
+            onClick={() => setShowTimeline(!showTimeline)}
+            className="flex items-center gap-1 w-full px-2 py-1 text-xs text-[#bbbbbb] uppercase font-semibold hover:bg-[#2a2d2e] rounded"
+          >
+            {showTimeline ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            <History size={14} className="text-blue-400" />
+            <span>Timeline</span>
+            <span className="ml-auto text-[10px] text-[#666]">git log</span>
+          </button>
+
+          {showTimeline && (
+            <div className="mt-1 space-y-0.5">
+              {mockGitTimeline.map((commit, index) => (
+                <div
+                  key={commit.hash}
+                  className="relative group"
+                >
+                  {/* Timeline connector line */}
+                  {index < mockGitTimeline.length - 1 && (
+                    <div className="absolute left-[17px] top-6 bottom-0 w-px bg-[#404040]" />
+                  )}
+
+                  <div className="flex items-start gap-2 px-2 py-1.5 hover:bg-[#2a2d2e] rounded cursor-pointer">
+                    {/* Commit icon */}
+                    <div className="relative z-10 flex-shrink-0 mt-0.5">
+                      {commit.isMerge ? (
+                        <div className="w-4 h-4 rounded-full bg-purple-500 flex items-center justify-center">
+                          <GitBranch size={10} className="text-white" />
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-[#3c3c3c] border border-[#666] flex items-center justify-center">
+                          <GitCommit size={8} className="text-[#cccccc]" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Commit info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-white truncate flex-1">
+                          {commit.message}
+                        </span>
+                        {commit.branch && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 bg-[#3c3c3c] text-[10px] text-blue-400 rounded">
+                            {commit.branch}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-[#858585] font-mono">
+                          {commit.shortHash}
+                        </span>
+                        <span className="text-[10px] text-[#666]">•</span>
+                        <span className="text-[10px] text-[#858585]">
+                          {commit.author}
+                        </span>
+                        <span className="text-[10px] text-[#666]">•</span>
+                        <span className="text-[10px] text-[#666] flex items-center gap-1">
+                          <Clock size={10} />
+                          {commit.relativeDate}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions (visible on hover) */}
+                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 flex-shrink-0">
+                      <Tooltip content="View Commit">
+                        <button className="p-0.5 hover:bg-[#404040] rounded">
+                          <Eye size={12} className="text-[#858585]" />
+                        </button>
+                      </Tooltip>
+                      <Tooltip content="Copy Hash">
+                        <button className="p-0.5 hover:bg-[#404040] rounded">
+                          <Copy size={12} className="text-[#858585]" />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Load more button */}
+              <button className="w-full px-2 py-2 text-xs text-[#858585] hover:text-white hover:bg-[#2a2d2e] rounded flex items-center justify-center gap-1">
+                <RefreshCw size={12} />
+                Load more commits...
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -1232,47 +1962,157 @@ interface CodeEditorProps {
   onCursorChange?: (pos: { line: number; col: number }) => void;
 }
 
+// 检测可折叠区域
+function detectFoldableRegions(lines: string[]): Map<number, number> {
+  const regions = new Map<number, number>(); // startLine -> endLine
+  const stack: { line: number; char: string }[] = [];
+
+  lines.forEach((line, i) => {
+    // 检测 import 块的开始
+    if (line.trim().startsWith('import ') && !line.includes(';')) {
+      // 多行 import
+      let endLine = i;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].includes(';') || lines[j].includes('from')) {
+          endLine = j;
+          break;
+        }
+      }
+      if (endLine > i) {
+        regions.set(i, endLine);
+      }
+    }
+
+    // 检测花括号
+    for (let j = 0; j < line.length; j++) {
+      const char = line[j];
+      if (char === '{' || char === '[' || char === '(') {
+        stack.push({ line: i, char });
+      } else if (char === '}' || char === ']' || char === ')') {
+        const last = stack.pop();
+        if (last && last.line < i) {
+          // 只折叠跨越多行的块
+          regions.set(last.line, i);
+        }
+      }
+    }
+  });
+
+  return regions;
+}
+
 const CodeEditor: React.FC<CodeEditorProps> = ({ content, language, onCursorChange }) => {
   const lines = content.split('\n');
   const [activeLine, setActiveLine] = useState(1);
+  const [foldedRegions, setFoldedRegions] = useState<Set<number>>(new Set());
+
+  // 检测可折叠区域
+  const foldableRegions = React.useMemo(() => detectFoldableRegions(lines), [lines]);
 
   const handleLineClick = (lineNum: number) => {
     setActiveLine(lineNum);
     onCursorChange?.({ line: lineNum, col: 1 });
   };
 
+  const toggleFold = (lineNum: number) => {
+    setFoldedRegions(prev => {
+      const next = new Set(prev);
+      if (next.has(lineNum)) {
+        next.delete(lineNum);
+      } else {
+        next.add(lineNum);
+      }
+      return next;
+    });
+  };
+
+  // 计算哪些行应该被隐藏
+  const hiddenLines = React.useMemo(() => {
+    const hidden = new Set<number>();
+    foldedRegions.forEach(startLine => {
+      const endLine = foldableRegions.get(startLine);
+      if (endLine !== undefined) {
+        for (let i = startLine + 1; i <= endLine; i++) {
+          hidden.add(i);
+        }
+      }
+    });
+    return hidden;
+  }, [foldedRegions, foldableRegions]);
+
   return (
     <div className="flex text-xs leading-5 font-mono">
-      {/* Line Numbers */}
-      <div className="flex flex-col items-end pr-4 pl-4 py-2 text-[#858585] select-none bg-[#1e1e1e] border-r border-[#404040] sticky left-0">
-        {lines.map((_, i) => (
-          <div
-            key={i}
-            onClick={() => handleLineClick(i + 1)}
-            className={cn(
-              "cursor-pointer hover:text-white px-1",
-              activeLine === i + 1 && "text-white"
-            )}
-          >
-            {i + 1}
-          </div>
-        ))}
+      {/* Fold Indicators + Line Numbers */}
+      <div className="flex py-2 text-[#858585] select-none bg-[#1e1e1e] border-r border-[#404040] sticky left-0">
+        {/* Fold Column */}
+        <div className="w-4 flex flex-col items-center">
+          {lines.map((_, i) => {
+            if (hiddenLines.has(i)) return null;
+            const isFoldable = foldableRegions.has(i);
+            const isFolded = foldedRegions.has(i);
+
+            return (
+              <div key={i} className="h-5 flex items-center justify-center">
+                {isFoldable && (
+                  <button
+                    onClick={() => toggleFold(i)}
+                    className="w-3 h-3 flex items-center justify-center hover:bg-[#3c3c3c] rounded text-[10px]"
+                  >
+                    {isFolded ? '▶' : '▼'}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* Line Numbers */}
+        <div className="flex flex-col items-end pr-2 pl-1">
+          {lines.map((_, i) => {
+            if (hiddenLines.has(i)) return null;
+            return (
+              <div
+                key={i}
+                onClick={() => handleLineClick(i + 1)}
+                className={cn(
+                  "h-5 cursor-pointer hover:text-white px-1 flex items-center",
+                  activeLine === i + 1 && "text-white"
+                )}
+              >
+                {i + 1}
+              </div>
+            );
+          })}
+        </div>
       </div>
       {/* Code Content */}
       <pre className="flex-1 p-2 overflow-x-auto">
         <code className="text-[#d4d4d4]">
-          {lines.map((line, i) => (
-            <div
-              key={i}
-              onClick={() => handleLineClick(i + 1)}
-              className={cn(
-                "hover:bg-[#2a2d2e] cursor-text",
-                activeLine === i + 1 && "bg-[#2a2d2e] border-l-2 border-[#ffcc00] -ml-0.5 pl-0.5"
-              )}
-            >
-              <SyntaxHighlight line={line} />
-            </div>
-          ))}
+          {lines.map((line, i) => {
+            if (hiddenLines.has(i)) return null;
+
+            const isFolded = foldedRegions.has(i);
+            const foldedLinesCount = isFolded
+              ? (foldableRegions.get(i) || i) - i
+              : 0;
+
+            return (
+              <div
+                key={i}
+                onClick={() => handleLineClick(i + 1)}
+                className={cn(
+                  "h-5 hover:bg-[#2a2d2e] cursor-text flex items-center",
+                  activeLine === i + 1 && "bg-[#2a2d2e] border-l-2 border-[#ffcc00] -ml-0.5 pl-0.5"
+                )}
+              >
+                <SyntaxHighlight line={line} />
+                {isFolded && (
+                  <span className="ml-1 px-1 py-0.5 bg-[#3c3c3c] text-[#858585] rounded text-[10px]">
+                    ... {foldedLinesCount} lines
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </code>
       </pre>
     </div>
@@ -1361,9 +2201,10 @@ const ChatBubble: React.FC<{ message: ChatMessage; appName?: string }> = ({ mess
 interface ChatPanelProps {
   onClose: () => void;
   appType: 'cursor' | 'antigravity' | 'windsurf';
+  width?: number;
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, appType }) => {
+const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, appType, width = 320 }) => {
   const [activeTab, setActiveTab] = useState<'chat' | 'composer' | 'history'>('chat');
   const [attachedFiles, setAttachedFiles] = useState<string[]>(['App.tsx']);
   const [inputValue, setInputValue] = useState('');
@@ -1429,7 +2270,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, appType }) => {
   };
 
   return (
-    <div className="w-80 bg-[#252526] border-l border-[#1e1e1e] flex flex-col">
+    <div
+      className="bg-[#252526] border-l border-[#1e1e1e] flex flex-col"
+      style={{ width }}
+    >
       {/* Header with tabs */}
       <div className="flex items-center justify-between px-2 py-1 border-b border-[#1e1e1e]">
         <div className="flex items-center gap-1">
