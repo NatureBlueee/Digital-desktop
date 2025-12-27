@@ -31,6 +31,12 @@ body {
   position: absolute !important;
   background-color: transparent !important;
   transition: background-color 0.15s ease !important;
+  pointer-events: auto !important;
+}
+
+/* 确保 react-rnd 容器可以显示延伸的 resize handles */
+.react-rnd {
+  overflow: visible !important;
 }
 
 /* 边缘句柄 - 悬停时显示蓝色高亮 */
