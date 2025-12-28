@@ -6,6 +6,7 @@ import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
+import { AntigravityApp, CursorApp } from "@/components/apps/AIIDE";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -34,76 +35,68 @@ export default function WindowManager() {
             }}
             resizeHandleStyles={{
                 top: {
-                  height: '6px',
+                  height: '8px',
                   top: '0px',
                   cursor: 'ns-resize',
-                  zIndex: 10,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 50,
+                  background: 'transparent'
                 },
                 bottom: {
-                  height: '6px',
+                  height: '8px',
                   bottom: '0px',
                   cursor: 'ns-resize',
-                  zIndex: 10,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 50,
+                  background: 'transparent'
                 },
                 left: {
-                  width: '6px',
+                  width: '8px',
                   left: '0px',
                   cursor: 'ew-resize',
-                  zIndex: 10,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 50,
+                  background: 'transparent'
                 },
                 right: {
-                  width: '6px',
+                  width: '8px',
                   right: '0px',
                   cursor: 'ew-resize',
-                  zIndex: 10,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 50,
+                  background: 'transparent'
                 },
                 topRight: {
-                  width: '12px',
-                  height: '12px',
+                  width: '16px',
+                  height: '16px',
                   right: '0px',
                   top: '0px',
                   cursor: 'ne-resize',
-                  zIndex: 20,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 60,
+                  background: 'transparent'
                 },
                 topLeft: {
-                  width: '12px',
-                  height: '12px',
+                  width: '16px',
+                  height: '16px',
                   left: '0px',
                   top: '0px',
                   cursor: 'nw-resize',
-                  zIndex: 20,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 60,
+                  background: 'transparent'
                 },
                 bottomRight: {
-                  width: '12px',
-                  height: '12px',
+                  width: '16px',
+                  height: '16px',
                   right: '0px',
                   bottom: '0px',
                   cursor: 'se-resize',
-                  zIndex: 20,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 60,
+                  background: 'transparent'
                 },
                 bottomLeft: {
-                  width: '12px',
-                  height: '12px',
+                  width: '16px',
+                  height: '16px',
                   left: '0px',
                   bottom: '0px',
                   cursor: 'sw-resize',
-                  zIndex: 20,
-                  background: 'transparent',
-                  transition: 'background-color 0.2s ease'
+                  zIndex: 60,
+                  background: 'transparent'
                 },
             }}
             resizeHandleClasses={{
@@ -126,12 +119,16 @@ export default function WindowManager() {
               onMinimize={() => minimizeWindow(window.id)}
               onMaximize={() => maximizeWindow(window.id)}
               onFocus={() => focusWindow(window.id)}
-              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt'}
+              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'antigravity' || window.appId === 'cursor'}
             >
               {window.appId === 'claude' ? (
                 <ClaudeApp windowId={window.id} />
               ) : window.appId === 'chatgpt' ? (
                 <ChatGPTArchiveApp windowId={window.id} />
+              ) : window.appId === 'antigravity' ? (
+                <AntigravityApp windowId={window.id} />
+              ) : window.appId === 'cursor' ? (
+                <CursorApp windowId={window.id} appType="cursor" />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>

@@ -21,7 +21,9 @@
     "react": "latest",
     "react-contexify": "^6.0.0",
     "react-dom": "latest",
+    "react-markdown": "^10.1.0",
     "react-rnd": "^10.5.2",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0",
     "zustand": "^5.0.9"
   },
