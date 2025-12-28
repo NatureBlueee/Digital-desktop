@@ -6,7 +6,8 @@ import { useDesktopStore } from "@/lib/store/desktopStore";
 import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
-import { AntigravityApp, CursorApp } from "@/components/apps/AIIDE";
+import { CursorApp, AntigravityApp } from "@/components/apps/AIIDE";
+import { NotionApp } from "@/components/apps/Notion";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -36,67 +37,79 @@ export default function WindowManager() {
             resizeHandleStyles={{
                 top: {
                   height: '8px',
-                  top: '0px',
+                  top: '-4px',
+                  left: '8px',
+                  right: '8px',
+                  width: 'calc(100% - 16px)',
                   cursor: 'ns-resize',
-                  zIndex: 50,
-                  background: 'transparent'
+                  zIndex: 9999,
+                  background: 'transparent',
                 },
                 bottom: {
                   height: '8px',
-                  bottom: '0px',
+                  bottom: '-4px',
+                  left: '8px',
+                  right: '8px',
+                  width: 'calc(100% - 16px)',
                   cursor: 'ns-resize',
-                  zIndex: 50,
-                  background: 'transparent'
+                  zIndex: 9999,
+                  background: 'transparent',
                 },
                 left: {
                   width: '8px',
-                  left: '0px',
+                  left: '-4px',
+                  top: '8px',
+                  bottom: '8px',
+                  height: 'calc(100% - 16px)',
                   cursor: 'ew-resize',
-                  zIndex: 50,
-                  background: 'transparent'
+                  zIndex: 9999,
+                  background: 'transparent',
                 },
                 right: {
                   width: '8px',
-                  right: '0px',
+                  right: '-4px',
+                  top: '8px',
+                  bottom: '8px',
+                  height: 'calc(100% - 16px)',
                   cursor: 'ew-resize',
-                  zIndex: 50,
-                  background: 'transparent'
+                  zIndex: 9999,
+                  background: 'transparent',
                 },
                 topRight: {
                   width: '16px',
                   height: '16px',
-                  right: '0px',
-                  top: '0px',
+                  right: '-4px',
+                  top: '-4px',
                   cursor: 'ne-resize',
-                  zIndex: 60,
-                  background: 'transparent'
+                  zIndex: 10000,
+                  background: 'transparent',
                 },
                 topLeft: {
                   width: '16px',
                   height: '16px',
-                  left: '0px',
-                  top: '0px',
+                  left: '-4px',
+                  top: '-4px',
                   cursor: 'nw-resize',
-                  zIndex: 60,
-                  background: 'transparent'
+                  zIndex: 10000,
+                  background: 'transparent',
                 },
                 bottomRight: {
                   width: '16px',
                   height: '16px',
-                  right: '0px',
-                  bottom: '0px',
+                  right: '-4px',
+                  bottom: '-4px',
                   cursor: 'se-resize',
-                  zIndex: 60,
-                  background: 'transparent'
+                  zIndex: 10000,
+                  background: 'transparent',
                 },
                 bottomLeft: {
                   width: '16px',
                   height: '16px',
-                  left: '0px',
-                  bottom: '0px',
+                  left: '-4px',
+                  bottom: '-4px',
                   cursor: 'sw-resize',
-                  zIndex: 60,
-                  background: 'transparent'
+                  zIndex: 10000,
+                  background: 'transparent',
                 },
             }}
             resizeHandleClasses={{
@@ -119,16 +132,18 @@ export default function WindowManager() {
               onMinimize={() => minimizeWindow(window.id)}
               onMaximize={() => maximizeWindow(window.id)}
               onFocus={() => focusWindow(window.id)}
-              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'antigravity' || window.appId === 'cursor'}
+              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'cursor' || window.appId === 'antigravity' || window.appId === 'notion'}
             >
               {window.appId === 'claude' ? (
                 <ClaudeApp windowId={window.id} />
               ) : window.appId === 'chatgpt' ? (
                 <ChatGPTArchiveApp windowId={window.id} />
-              ) : window.appId === 'antigravity' ? (
-                <AntigravityApp windowId={window.id} />
               ) : window.appId === 'cursor' ? (
                 <CursorApp windowId={window.id} appType="cursor" />
+              ) : window.appId === 'antigravity' ? (
+                <AntigravityApp windowId={window.id} />
+              ) : window.appId === 'notion' ? (
+                <NotionApp windowId={window.id} />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>

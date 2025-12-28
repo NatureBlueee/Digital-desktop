@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getPublicConversations } from '@/lib/supabase/chatgpt-database';
+import { getMockConversations } from '@/lib/mock/chatgpt-data';
 import { ApiResponse, PaginatedResponse, ConversationListItem } from '@/types/chatgpt-archive';
 
 /**
@@ -23,12 +25,18 @@ export async function GET(request: NextRequest) {
       ? parseInt(searchParams.get('limit')!, 10)
       : undefined;
 
-    const result = await getPublicConversations({
-      query,
-      tag,
-      cursor,
-      limit,
-    });
+    // Use mock data if Supabase is not configured
+    let result;
+    if (!isSupabaseConfigured) {
+      result = getMockConversations({ query, tag, limit });
+    } else {
+      result = await getPublicConversations({
+        query,
+        tag,
+        cursor,
+        limit,
+      });
+    }
 
     const response: ApiResponse<PaginatedResponse<ConversationListItem>> = {
       success: true,

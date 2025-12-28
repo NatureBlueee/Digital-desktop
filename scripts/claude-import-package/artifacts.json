@@ -1,0 +1,37 @@
+[
+  {
+    "id": "art-001",
+    "title": "Button Component",
+    "type": "code",
+    "language": "tsx",
+    "icon": "⚛️",
+    "conversation_id": "conv-claude-001",
+    "content": "import { cva, type VariantProps } from 'class-variance-authority';\nimport { forwardRef, type ButtonHTMLAttributes } from 'react';\nimport { cn } from '@/lib/utils';\n\nconst buttonVariants = cva(\n  'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2',\n  {\n    variants: {\n      variant: {\n        default: 'bg-primary text-white hover:bg-primary/90',\n        outline: 'border border-input bg-background hover:bg-accent',\n        ghost: 'hover:bg-accent hover:text-accent-foreground',\n      },\n      size: {\n        sm: 'h-8 px-3 text-sm',\n        md: 'h-10 px-4',\n        lg: 'h-12 px-6 text-lg',\n      },\n    },\n    defaultVariants: {\n      variant: 'default',\n      size: 'md',\n    },\n  }\n);\n\nexport interface ButtonProps\n  extends ButtonHTMLAttributes<HTMLButtonElement>,\n    VariantProps<typeof buttonVariants> {}\n\nexport const Button = forwardRef<HTMLButtonElement, ButtonProps>(\n  ({ className, variant, size, ...props }, ref) => (\n    <button\n      ref={ref}\n      className={cn(buttonVariants({ variant, size }), className)}\n      {...props}\n    />\n  )\n);\n\nButton.displayName = 'Button';"
+  },
+  {
+    "id": "art-002",
+    "title": "Input Component",
+    "type": "code",
+    "language": "tsx",
+    "icon": "⚛️",
+    "conversation_id": "conv-claude-001",
+    "content": "import { forwardRef, type InputHTMLAttributes } from 'react';\nimport { cn } from '@/lib/utils';\n\nexport interface InputProps extends InputHTMLAttributes<HTMLInputElement> {\n  label?: string;\n  error?: string;\n  helperText?: string;\n}\n\nexport const Input = forwardRef<HTMLInputElement, InputProps>(\n  ({ className, label, error, helperText, id, ...props }, ref) => {\n    const inputId = id || label?.toLowerCase().replace(/\\s+/g, '-');\n    \n    return (\n      <div className=\"flex flex-col gap-1.5\">\n        {label && (\n          <label\n            htmlFor={inputId}\n            className=\"text-sm font-medium text-foreground\"\n          >\n            {label}\n          </label>\n        )}\n        <input\n          ref={ref}\n          id={inputId}\n          className={cn(\n            'flex h-10 w-full rounded-md border bg-background px-3 py-2',\n            'text-sm placeholder:text-muted-foreground',\n            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',\n            'disabled:cursor-not-allowed disabled:opacity-50',\n            error\n              ? 'border-destructive focus-visible:ring-destructive'\n              : 'border-input',\n            className\n          )}\n          aria-invalid={error ? 'true' : 'false'}\n          aria-describedby={error ? `${inputId}-error` : undefined}\n          {...props}\n        />\n        {error && (\n          <p id={`${inputId}-error`} className=\"text-sm text-destructive\">\n            {error}\n          </p>\n        )}\n        {helperText && !error && (\n          <p className=\"text-sm text-muted-foreground\">{helperText}</p>\n        )}\n      </div>\n    );\n  }\n);\n\nInput.displayName = 'Input';"
+  },
+  {
+    "id": "art-003",
+    "title": "RLS Policy Template",
+    "type": "code",
+    "language": "sql",
+    "icon": "🔒",
+    "conversation_id": "conv-claude-002",
+    "content": "-- Enable RLS\nALTER TABLE your_table ENABLE ROW LEVEL SECURITY;\n\n-- Public read access\nCREATE POLICY \"Public read access\"\n  ON your_table FOR SELECT\n  USING (visibility = 'public');\n\n-- Authenticated user insert\nCREATE POLICY \"Authenticated users can insert\"\n  ON your_table FOR INSERT\n  WITH CHECK (auth.uid() IS NOT NULL);\n\n-- Users can update their own data\nCREATE POLICY \"Users can update own data\"\n  ON your_table FOR UPDATE\n  USING (auth.uid() = user_id)\n  WITH CHECK (auth.uid() = user_id);\n\n-- Users can delete their own data\nCREATE POLICY \"Users can delete own data\"\n  ON your_table FOR DELETE\n  USING (auth.uid() = user_id);"
+  },
+  {
+    "id": "art-004",
+    "title": "AI Comparison Chart",
+    "type": "document",
+    "icon": "📊",
+    "conversation_id": "conv-claude-004",
+    "content": "# AI Assistant Comparison\n\n## Context Windows\n- ChatGPT: 128K tokens\n- Claude: 200K tokens  \n- Gemini Pro: 1M+ tokens\n\n## Best For\n- **ChatGPT**: General tasks, plugins, voice\n- **Claude**: Long documents, coding, analysis\n- **Gemini**: Google integration, multimodal\n\n## Pricing Considerations\nAll offer free tiers with paid pro versions.\nAPI pricing varies by model and usage."
+  }
+]

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getConversationById } from '@/lib/supabase/chatgpt-database';
+import { getMockConversation } from '@/lib/mock/chatgpt-data';
 import { ApiResponse, ConversationDetail } from '@/types/chatgpt-archive';
 
 /**
@@ -13,7 +15,10 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const conversation = await getConversationById(id);
+    // Use mock data if Supabase is not configured
+    const conversation = isSupabaseConfigured
+      ? await getConversationById(id)
+      : getMockConversation(id);
 
     if (!conversation) {
       const response: ApiResponse<null> = {
