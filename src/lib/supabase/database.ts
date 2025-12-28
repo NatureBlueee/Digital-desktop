@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { getSupabaseClient } from './client';
 import { AppData, AppType } from '@/types';
 
 /**
@@ -9,7 +9,7 @@ import { AppData, AppType } from '@/types';
  * 保存或更新应用数据
  */
 export async function saveAppData(appData: AppData) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('apps')
     .upsert({
       id: appData.id,
@@ -31,7 +31,7 @@ export async function saveAppData(appData: AppData) {
  * 获取所有应用数据
  */
 export async function getAllApps(): Promise<AppData[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('apps')
     .select('*')
     .order('updated_at', { ascending: false });
@@ -44,7 +44,7 @@ export async function getAllApps(): Promise<AppData[]> {
  * 获取指定类型的应用数据
  */
 export async function getAppByType(type: AppType): Promise<AppData | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('apps')
     .select('*')
     .eq('type', type)
@@ -61,7 +61,7 @@ export async function getAppByType(type: AppType): Promise<AppData | null> {
  * 删除应用数据
  */
 export async function deleteApp(id: string) {
-  const { error } = await supabase.from('apps').delete().eq('id', id);
+  const { error } = await getSupabaseClient().from('apps').delete().eq('id', id);
 
   if (error) throw error;
 }

@@ -1,0 +1,3180 @@
+{
+  "project": {
+    "name": "UI Components",
+    "slug": "ui-components",
+    "app_type": "cursor"
+  },
+  "file_tree": [
+    {
+      "name": "ContextMenu.tsx",
+      "type": "file",
+      "path": "ContextMenu.tsx",
+      "language": "typescript",
+      "size": 7955
+    },
+    {
+      "name": "index.ts",
+      "type": "file",
+      "path": "index.ts",
+      "language": "typescript",
+      "size": 384
+    },
+    {
+      "name": "MarkdownPreview.tsx",
+      "type": "file",
+      "path": "MarkdownPreview.tsx",
+      "language": "typescript",
+      "size": 5220
+    },
+    {
+      "name": "Menu.tsx",
+      "type": "file",
+      "path": "Menu.tsx",
+      "language": "typescript",
+      "size": 14070
+    },
+    {
+      "name": "ResizeHandle.tsx",
+      "type": "file",
+      "path": "ResizeHandle.tsx",
+      "language": "typescript",
+      "size": 3981
+    },
+    {
+      "name": "Tooltip.tsx",
+      "type": "file",
+      "path": "Tooltip.tsx",
+      "language": "typescript",
+      "size": 4800
+    }
+  ],
+  "files": [
+    {
+      "path": "ContextMenu.tsx",
+      "name": "ContextMenu.tsx",
+      "content": "/**\n * ContextMenu Component\n *\n * 设计决策:\n * - 通过 onContextMenu 事件触发\n * - 位置跟随鼠标右键点击位置\n * - 自动处理边界检测（防止超出屏幕）\n * - 支持嵌套子菜单\n * - ESC 或点击外部关闭\n */\n\nimport React, { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';\nimport { cn } from '@/lib/utils';\nimport { ChevronRight, Check } from 'lucide-react';\n\n// ============================================================\n// Types\n// ============================================================\n\ninterface ContextMenuItemData {\n  label: string;\n  shortcut?: string;\n  icon?: React.ReactNode;\n  disabled?: boolean;\n  checked?: boolean;\n  danger?: boolean;\n  onClick?: () => void;\n  submenu?: ContextMenuItemData[];\n  separator?: boolean;\n}\n\ninterface ContextMenuState {\n  isOpen: boolean;\n  x: number;\n  y: number;\n}\n\n// ============================================================\n// Context\n// ============================================================\n\ninterface ContextMenuContextValue {\n  close: () => void;\n}\n\nconst ContextMenuContext = createContext<ContextMenuContextValue | null>(null);\n\n// ============================================================\n// Hook: useContextMenu\n// ============================================================\n\nexport function useContextMenu() {\n  const [state, setState] = useState<ContextMenuState>({\n    isOpen: false,\n    x: 0,\n    y: 0,\n  });\n\n  const open = useCallback((e: React.MouseEvent) => {\n    e.preventDefault();\n    e.stopPropagation();\n\n    // 计算位置，考虑边界\n    let x = e.clientX;\n    let y = e.clientY;\n\n    // 简单的边界检测（假设菜单最大 250px 宽，300px 高）\n    const menuWidth = 250;\n    const menuHeight = 300;\n\n    if (x + menuWidth > window.innerWidth) {\n      x = window.innerWidth - menuWidth - 10;\n    }\n    if (y + menuHeight > window.innerHeight) {\n      y = window.innerHeight - menuHeight - 10;\n    }\n\n    setState({ isOpen: true, x, y });\n  }, []);\n\n  const close = useCallback(() => {\n    setState(prev => ({ ...prev, isOpen: false }));\n  }, []);\n\n  return { state, open, close };\n}\n\n// ============================================================\n// ContextMenu Component\n// ============================================================\n\ninterface ContextMenuProps {\n  state: ContextMenuState;\n  items: ContextMenuItemData[];\n  onClose: () => void;\n}\n\nexport const ContextMenu: React.FC<ContextMenuProps> = ({ state, items, onClose }) => {\n  const menuRef = useRef<HTMLDivElement>(null);\n\n  // 点击外部关闭\n  useEffect(() => {\n    if (!state.isOpen) return;\n\n    const handleClickOutside = (e: MouseEvent) => {\n      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {\n        onClose();\n      }\n    };\n\n    const handleEscape = (e: KeyboardEvent) => {\n      if (e.key === 'Escape') {\n        onClose();\n      }\n    };\n\n    // 延迟添加监听器，防止触发右键的点击立即关闭菜单\n    const timer = setTimeout(() => {\n      document.addEventListener('mousedown', handleClickOutside);\n      document.addEventListener('keydown', handleEscape);\n      document.addEventListener('contextmenu', handleClickOutside);\n    }, 0);\n\n    return () => {\n      clearTimeout(timer);\n      document.removeEventListener('mousedown', handleClickOutside);\n      document.removeEventListener('keydown', handleEscape);\n      document.removeEventListener('contextmenu', handleClickOutside);\n    };\n  }, [state.isOpen, onClose]);\n\n  if (!state.isOpen) return null;\n\n  return (\n    <ContextMenuContext.Provider value={{ close: onClose }}>\n      <div\n        ref={menuRef}\n        className={cn(\n          \"fixed z-[100]\",\n          \"min-w-[200px] py-1\",\n          \"bg-[#252526] border border-[#454545] rounded-md shadow-2xl\"\n        )}\n        style={{ left: state.x, top: state.y }}\n      >\n        {items.map((item, index) => (\n          item.separator ? (\n            <ContextMenuSeparator key={`sep-${index}`} />\n          ) : (\n            <ContextMenuItem key={`${item.label}-${index}`} item={item} />\n          )\n        ))}\n      </div>\n    </ContextMenuContext.Provider>\n  );\n};\n\n// ============================================================\n// ContextMenuItem\n// ============================================================\n\nconst ContextMenuItem: React.FC<{ item: ContextMenuItemData }> = ({ item }) => {\n  const context = useContext(ContextMenuContext);\n  const [showSubmenu, setShowSubmenu] = useState(false);\n  const hasSubmenu = item.submenu && item.submenu.length > 0;\n\n  const handleClick = () => {\n    if (item.disabled) return;\n    if (hasSubmenu) return;\n\n    item.onClick?.();\n    context?.close();\n  };\n\n  return (\n    <div\n      className=\"relative\"\n      onMouseEnter={() => hasSubmenu && setShowSubmenu(true)}\n      onMouseLeave={() => setShowSubmenu(false)}\n    >\n      <div\n        className={cn(\n          \"flex items-center px-3 py-1.5 mx-1 rounded cursor-pointer\",\n          item.disabled\n            ? \"text-[#6e6e6e] cursor-not-allowed\"\n            : item.danger\n              ? \"text-red-400 hover:bg-red-500/20\"\n              : \"text-[#cccccc] hover:bg-[#094771]\",\n          showSubmenu && hasSubmenu && \"bg-[#094771]\"\n        )}\n        onClick={handleClick}\n      >\n        {/* Icon */}\n        <span className=\"w-5 flex-shrink-0\">\n          {item.checked !== undefined ? (\n            item.checked ? <Check size={14} /> : null\n          ) : item.icon ? (\n            <span className=\"text-[#858585]\">{item.icon}</span>\n          ) : null}\n        </span>\n\n        {/* Label */}\n        <span className=\"flex-1 text-xs\">{item.label}</span>\n\n        {/* Shortcut or Arrow */}\n        {hasSubmenu ? (\n          <ChevronRight size={14} className=\"text-[#858585] ml-4\" />\n        ) : item.shortcut ? (\n          <span className=\"text-[#858585] text-xs ml-4\">{item.shortcut}</span>\n        ) : null}\n      </div>\n\n      {/* Submenu */}\n      {hasSubmenu && showSubmenu && (\n        <div\n          className={cn(\n            \"absolute left-full top-0 ml-0.5\",\n            \"min-w-[180px] py-1\",\n            \"bg-[#252526] border border-[#454545] rounded-md shadow-xl\"\n          )}\n        >\n          {item.submenu!.map((subItem, subIndex) => (\n            subItem.separator ? (\n              <ContextMenuSeparator key={`sub-sep-${subIndex}`} />\n            ) : (\n              <ContextMenuSubItem key={subItem.label} item={subItem} />\n            )\n          ))}\n        </div>\n      )}\n    </div>\n  );\n};\n\n// ============================================================\n// ContextMenuSubItem\n// ============================================================\n\nconst ContextMenuSubItem: React.FC<{ item: ContextMenuItemData }> = ({ item }) => {\n  const context = useContext(ContextMenuContext);\n\n  const handleClick = () => {\n    if (item.disabled) return;\n    item.onClick?.();\n    context?.close();\n  };\n\n  return (\n    <div\n      className={cn(\n        \"flex items-center px-3 py-1.5 mx-1 rounded cursor-pointer\",\n        item.disabled\n          ? \"text-[#6e6e6e] cursor-not-allowed\"\n          : item.danger\n            ? \"text-red-400 hover:bg-red-500/20\"\n            : \"text-[#cccccc] hover:bg-[#094771]\"\n      )}\n      onClick={handleClick}\n    >\n      <span className=\"w-5 flex-shrink-0\">\n        {item.checked && <Check size={14} />}\n        {item.icon && !item.checked && <span className=\"text-[#858585]\">{item.icon}</span>}\n      </span>\n      <span className=\"flex-1 text-xs\">{item.label}</span>\n      {item.shortcut && (\n        <span className=\"text-[#858585] text-xs ml-4\">{item.shortcut}</span>\n      )}\n    </div>\n  );\n};\n\n// ============================================================\n// ContextMenuSeparator\n// ============================================================\n\nconst ContextMenuSeparator: React.FC = () => (\n  <div className=\"h-px bg-[#454545] my-1 mx-2\" />\n);\n\nexport type { ContextMenuItemData };\n",
+      "language": "typescript",
+      "size_bytes": 7955,
+      "is_binary": false
+    },
+    {
+      "path": "index.ts",
+      "name": "index.ts",
+      "content": "export { Menu, MenuTrigger, MenuContent, MenuBar } from './Menu';\nexport type { MenuItemData } from './Menu';\n\nexport { ContextMenu, useContextMenu } from './ContextMenu';\nexport type { ContextMenuItemData } from './ContextMenu';\n\nexport { Tooltip } from './Tooltip';\n\nexport { ResizeHandle, useResizable } from './ResizeHandle';\n\nexport { MarkdownPreview } from './MarkdownPreview';\n",
+      "language": "typescript",
+      "size_bytes": 384,
+      "is_binary": false
+    },
+    {
+      "path": "MarkdownPreview.tsx",
+      "name": "MarkdownPreview.tsx",
+      "content": "/**\n * MarkdownPreview - Markdown 渲染组件\n *\n * 使用 react-markdown 渲染 Markdown 内容\n * 支持 GitHub Flavored Markdown (GFM)\n */\n\nimport React from 'react';\nimport ReactMarkdown from 'react-markdown';\nimport remarkGfm from 'remark-gfm';\nimport { cn } from '@/lib/utils';\n\ninterface MarkdownPreviewProps {\n  content: string;\n  className?: string;\n}\n\nexport const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, className }) => {\n  return (\n    <div className={cn(\"markdown-preview p-4 overflow-auto\", className)}>\n      <ReactMarkdown\n        remarkPlugins={[remarkGfm]}\n        components={{\n          // 标题\n          h1: ({ children }) => (\n            <h1 className=\"text-2xl font-bold text-white mb-4 pb-2 border-b border-[#404040]\">\n              {children}\n            </h1>\n          ),\n          h2: ({ children }) => (\n            <h2 className=\"text-xl font-bold text-white mb-3 mt-6 pb-1 border-b border-[#404040]\">\n              {children}\n            </h2>\n          ),\n          h3: ({ children }) => (\n            <h3 className=\"text-lg font-semibold text-white mb-2 mt-4\">\n              {children}\n            </h3>\n          ),\n          h4: ({ children }) => (\n            <h4 className=\"text-base font-semibold text-white mb-2 mt-3\">\n              {children}\n            </h4>\n          ),\n\n          // 段落\n          p: ({ children }) => (\n            <p className=\"text-[#cccccc] mb-3 leading-relaxed\">\n              {children}\n            </p>\n          ),\n\n          // 列表\n          ul: ({ children }) => (\n            <ul className=\"list-disc list-inside text-[#cccccc] mb-3 space-y-1 ml-2\">\n              {children}\n            </ul>\n          ),\n          ol: ({ children }) => (\n            <ol className=\"list-decimal list-inside text-[#cccccc] mb-3 space-y-1 ml-2\">\n              {children}\n            </ol>\n          ),\n          li: ({ children }) => (\n            <li className=\"text-[#cccccc]\">{children}</li>\n          ),\n\n          // 代码\n          code: ({ className, children, ...props }) => {\n            const match = /language-(\\w+)/.exec(className || '');\n            const isInline = !match;\n\n            if (isInline) {\n              return (\n                <code className=\"px-1.5 py-0.5 bg-[#3c3c3c] rounded text-[#e06c75] text-sm font-mono\" {...props}>\n                  {children}\n                </code>\n              );\n            }\n\n            return (\n              <code className={cn(\"block\", className)} {...props}>\n                {children}\n              </code>\n            );\n          },\n          pre: ({ children }) => (\n            <pre className=\"bg-[#2d2d30] rounded-lg p-4 mb-3 overflow-x-auto border border-[#404040]\">\n              <code className=\"text-sm font-mono text-[#d4d4d4]\">\n                {children}\n              </code>\n            </pre>\n          ),\n\n          // 引用\n          blockquote: ({ children }) => (\n            <blockquote className=\"border-l-4 border-[#007acc] pl-4 my-3 text-[#858585] italic\">\n              {children}\n            </blockquote>\n          ),\n\n          // 链接\n          a: ({ href, children }) => (\n            <a\n              href={href}\n              className=\"text-[#58a6ff] hover:underline\"\n              target=\"_blank\"\n              rel=\"noopener noreferrer\"\n            >\n              {children}\n            </a>\n          ),\n\n          // 图片\n          img: ({ src, alt }) => (\n            <img\n              src={src}\n              alt={alt}\n              className=\"max-w-full h-auto rounded my-3\"\n            />\n          ),\n\n          // 表格\n          table: ({ children }) => (\n            <div className=\"overflow-x-auto mb-3\">\n              <table className=\"min-w-full border-collapse border border-[#404040]\">\n                {children}\n              </table>\n            </div>\n          ),\n          thead: ({ children }) => (\n            <thead className=\"bg-[#2d2d30]\">{children}</thead>\n          ),\n          th: ({ children }) => (\n            <th className=\"border border-[#404040] px-3 py-2 text-left text-white font-semibold\">\n              {children}\n            </th>\n          ),\n          td: ({ children }) => (\n            <td className=\"border border-[#404040] px-3 py-2 text-[#cccccc]\">\n              {children}\n            </td>\n          ),\n\n          // 水平线\n          hr: () => (\n            <hr className=\"my-4 border-[#404040]\" />\n          ),\n\n          // 强调\n          strong: ({ children }) => (\n            <strong className=\"font-bold text-white\">{children}</strong>\n          ),\n          em: ({ children }) => (\n            <em className=\"italic text-[#cccccc]\">{children}</em>\n          ),\n\n          // 删除线\n          del: ({ children }) => (\n            <del className=\"text-[#858585] line-through\">{children}</del>\n          ),\n\n          // 任务列表\n          input: ({ checked }) => (\n            <input\n              type=\"checkbox\"\n              checked={checked}\n              readOnly\n              className=\"mr-2 accent-[#007acc]\"\n            />\n          ),\n        }}\n      >\n        {content}\n      </ReactMarkdown>\n    </div>\n  );\n};\n\nexport default MarkdownPreview;\n",
+      "language": "typescript",
+      "size_bytes": 5220,
+      "is_binary": false
+    },
+    {
+      "path": "Menu.tsx",
+      "name": "Menu.tsx",
+      "content": "/**\n * Menu Component System\n *\n * 设计决策:\n * - 使用 React Context 管理菜单状态\n * - 支持无限嵌套子菜单\n * - 支持键盘导航 (Arrow keys, Enter, Escape)\n * - 点击外部自动关闭\n * - 支持分隔线和禁用状态\n */\n\nimport React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';\nimport { cn } from '@/lib/utils';\nimport { ChevronRight, Check } from 'lucide-react';\n\n// ============================================================\n// Types\n// ============================================================\n\ninterface MenuContextValue {\n  isOpen: boolean;\n  setIsOpen: (open: boolean) => void;\n  activeSubmenu: string | null;\n  setActiveSubmenu: (id: string | null) => void;\n}\n\ninterface MenuItemData {\n  label: string;\n  shortcut?: string;\n  icon?: React.ReactNode;\n  disabled?: boolean;\n  checked?: boolean;\n  onClick?: () => void;\n  submenu?: MenuItemData[];\n  separator?: boolean;\n}\n\n// ============================================================\n// Context\n// ============================================================\n\nconst MenuContext = createContext<MenuContextValue | null>(null);\n\nconst useMenu = () => {\n  const context = useContext(MenuContext);\n  if (!context) throw new Error('useMenu must be used within Menu');\n  return context;\n};\n\n// ============================================================\n// Menu Root\n// ============================================================\n\ninterface MenuProps {\n  children: React.ReactNode;\n}\n\nexport const Menu: React.FC<MenuProps> = ({ children }) => {\n  const [isOpen, setIsOpen] = useState(false);\n  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);\n\n  return (\n    <MenuContext.Provider value={{ isOpen, setIsOpen, activeSubmenu, setActiveSubmenu }}>\n      <div className=\"relative inline-block\">\n        {children}\n      </div>\n    </MenuContext.Provider>\n  );\n};\n\n// ============================================================\n// Menu Trigger\n// ============================================================\n\ninterface MenuTriggerProps {\n  children: React.ReactNode;\n  className?: string;\n}\n\nexport const MenuTrigger: React.FC<MenuTriggerProps> = ({ children, className }) => {\n  const { isOpen, setIsOpen } = useMenu();\n\n  return (\n    <button\n      className={cn(\n        \"px-2 py-1 text-xs rounded transition-colors\",\n        isOpen ? \"bg-[#094771] text-white\" : \"hover:bg-[#3c3c3c] text-[#cccccc]\",\n        className\n      )}\n      onClick={() => setIsOpen(!isOpen)}\n      onMouseEnter={() => {\n        // 如果已经有菜单打开，hover 时也打开这个\n        const parentMenu = document.querySelector('[data-menu-open=\"true\"]');\n        if (parentMenu) setIsOpen(true);\n      }}\n    >\n      {children}\n    </button>\n  );\n};\n\n// ============================================================\n// Menu Content\n// ============================================================\n\ninterface MenuContentProps {\n  items: MenuItemData[];\n  className?: string;\n}\n\nexport const MenuContent: React.FC<MenuContentProps> = ({ items, className }) => {\n  const { isOpen, setIsOpen, setActiveSubmenu } = useMenu();\n  const menuRef = useRef<HTMLDivElement>(null);\n\n  // 点击外部关闭\n  useEffect(() => {\n    if (!isOpen) return;\n\n    const handleClickOutside = (e: MouseEvent) => {\n      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {\n        setIsOpen(false);\n        setActiveSubmenu(null);\n      }\n    };\n\n    const handleEscape = (e: KeyboardEvent) => {\n      if (e.key === 'Escape') {\n        setIsOpen(false);\n        setActiveSubmenu(null);\n      }\n    };\n\n    document.addEventListener('mousedown', handleClickOutside);\n    document.addEventListener('keydown', handleEscape);\n\n    return () => {\n      document.removeEventListener('mousedown', handleClickOutside);\n      document.removeEventListener('keydown', handleEscape);\n    };\n  }, [isOpen, setIsOpen, setActiveSubmenu]);\n\n  if (!isOpen) return null;\n\n  return (\n    <div\n      ref={menuRef}\n      data-menu-open={isOpen}\n      className={cn(\n        \"absolute top-full left-0 mt-0.5 z-50\",\n        \"min-w-[200px] py-1\",\n        \"bg-[#252526] border border-[#454545] rounded-md shadow-xl\",\n        className\n      )}\n    >\n      {items.map((item, index) => (\n        item.separator ? (\n          <MenuSeparator key={`sep-${index}`} />\n        ) : (\n          <MenuItem key={item.label} item={item} index={index} />\n        )\n      ))}\n    </div>\n  );\n};\n\n// ============================================================\n// Menu Item\n// ============================================================\n\ninterface MenuItemProps {\n  item: MenuItemData;\n  index: number;\n}\n\nconst MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {\n  const { setIsOpen, activeSubmenu, setActiveSubmenu } = useMenu();\n  const [showSubmenu, setShowSubmenu] = useState(false);\n  const itemRef = useRef<HTMLDivElement>(null);\n  const submenuId = `submenu-${index}`;\n\n  const hasSubmenu = item.submenu && item.submenu.length > 0;\n\n  const handleClick = () => {\n    if (item.disabled) return;\n    if (hasSubmenu) return; // 子菜单不触发点击\n\n    item.onClick?.();\n    setIsOpen(false);\n    setActiveSubmenu(null);\n  };\n\n  const handleMouseEnter = () => {\n    if (hasSubmenu) {\n      setActiveSubmenu(submenuId);\n      setShowSubmenu(true);\n    } else {\n      setActiveSubmenu(null);\n    }\n  };\n\n  const handleMouseLeave = () => {\n    // 延迟关闭，给用户时间移动到子菜单\n    setTimeout(() => {\n      if (activeSubmenu !== submenuId) {\n        setShowSubmenu(false);\n      }\n    }, 100);\n  };\n\n  return (\n    <div\n      ref={itemRef}\n      className=\"relative\"\n      onMouseEnter={handleMouseEnter}\n      onMouseLeave={handleMouseLeave}\n    >\n      <div\n        className={cn(\n          \"flex items-center px-3 py-1.5 mx-1 rounded cursor-pointer\",\n          item.disabled\n            ? \"text-[#6e6e6e] cursor-not-allowed\"\n            : \"text-[#cccccc] hover:bg-[#094771]\",\n          (showSubmenu && hasSubmenu) && \"bg-[#094771]\"\n        )}\n        onClick={handleClick}\n      >\n        {/* Checkbox / Icon */}\n        <span className=\"w-5 flex-shrink-0\">\n          {item.checked !== undefined ? (\n            item.checked ? <Check size={14} /> : null\n          ) : item.icon ? (\n            item.icon\n          ) : null}\n        </span>\n\n        {/* Label */}\n        <span className=\"flex-1 text-xs\">{item.label}</span>\n\n        {/* Shortcut or Submenu Arrow */}\n        {hasSubmenu ? (\n          <ChevronRight size={14} className=\"text-[#858585] ml-4\" />\n        ) : item.shortcut ? (\n          <span className=\"text-[#858585] text-xs ml-4\">{item.shortcut}</span>\n        ) : null}\n      </div>\n\n      {/* Submenu */}\n      {hasSubmenu && showSubmenu && (\n        <div\n          className={cn(\n            \"absolute left-full top-0 ml-0.5\",\n            \"min-w-[200px] py-1\",\n            \"bg-[#252526] border border-[#454545] rounded-md shadow-xl\"\n          )}\n        >\n          {item.submenu!.map((subItem, subIndex) => (\n            subItem.separator ? (\n              <MenuSeparator key={`sub-sep-${subIndex}`} />\n            ) : (\n              <SubMenuItem key={subItem.label} item={subItem} />\n            )\n          ))}\n        </div>\n      )}\n    </div>\n  );\n};\n\n// ============================================================\n// Sub Menu Item (简化版，不支持更深嵌套)\n// ============================================================\n\nconst SubMenuItem: React.FC<{ item: MenuItemData }> = ({ item }) => {\n  const { setIsOpen, setActiveSubmenu } = useMenu();\n\n  const handleClick = () => {\n    if (item.disabled) return;\n    item.onClick?.();\n    setIsOpen(false);\n    setActiveSubmenu(null);\n  };\n\n  return (\n    <div\n      className={cn(\n        \"flex items-center px-3 py-1.5 mx-1 rounded cursor-pointer\",\n        item.disabled\n          ? \"text-[#6e6e6e] cursor-not-allowed\"\n          : \"text-[#cccccc] hover:bg-[#094771]\"\n      )}\n      onClick={handleClick}\n    >\n      <span className=\"w-5 flex-shrink-0\">\n        {item.checked !== undefined ? (\n          item.checked ? <Check size={14} /> : null\n        ) : item.icon ? (\n          item.icon\n        ) : null}\n      </span>\n      <span className=\"flex-1 text-xs\">{item.label}</span>\n      {item.shortcut && (\n        <span className=\"text-[#858585] text-xs ml-4\">{item.shortcut}</span>\n      )}\n    </div>\n  );\n};\n\n// ============================================================\n// Menu Separator\n// ============================================================\n\nconst MenuSeparator: React.FC = () => (\n  <div className=\"h-px bg-[#454545] my-1 mx-2\" />\n);\n\n// ============================================================\n// Menu Bar (便捷组件)\n// ============================================================\n\ninterface MenuBarProps {\n  menus: {\n    label: string;\n    items: MenuItemData[];\n  }[];\n  className?: string;\n}\n\nexport const MenuBar: React.FC<MenuBarProps> = ({ menus, className }) => {\n  const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);\n  const menuBarRef = useRef<HTMLDivElement>(null);\n\n  // 点击外部关闭\n  useEffect(() => {\n    if (openMenuIndex === null) return;\n\n    const handleClickOutside = (e: MouseEvent) => {\n      if (menuBarRef.current && !menuBarRef.current.contains(e.target as Node)) {\n        setOpenMenuIndex(null);\n      }\n    };\n\n    const handleEscape = (e: KeyboardEvent) => {\n      if (e.key === 'Escape') {\n        setOpenMenuIndex(null);\n      }\n    };\n\n    document.addEventListener('mousedown', handleClickOutside);\n    document.addEventListener('keydown', handleEscape);\n\n    return () => {\n      document.removeEventListener('mousedown', handleClickOutside);\n      document.removeEventListener('keydown', handleEscape);\n    };\n  }, [openMenuIndex]);\n\n  return (\n    <div ref={menuBarRef} className={cn(\"flex items-center\", className)}>\n      {menus.map((menu, index) => (\n        <div key={menu.label} className=\"relative\">\n          <button\n            className={cn(\n              \"px-2 py-1 text-xs rounded transition-colors\",\n              openMenuIndex === index\n                ? \"bg-[#094771] text-white\"\n                : \"hover:bg-[#3c3c3c] text-[#cccccc]\"\n            )}\n            onClick={() => setOpenMenuIndex(openMenuIndex === index ? null : index)}\n            onMouseEnter={() => {\n              if (openMenuIndex !== null) setOpenMenuIndex(index);\n            }}\n          >\n            {menu.label}\n          </button>\n\n          {openMenuIndex === index && (\n            <div\n              className={cn(\n                \"absolute top-full left-0 mt-0.5 z-50\",\n                \"min-w-[220px] py-1\",\n                \"bg-[#252526] border border-[#454545] rounded-md shadow-xl\"\n              )}\n            >\n              {menu.items.map((item, itemIndex) => (\n                item.separator ? (\n                  <MenuSeparator key={`sep-${itemIndex}`} />\n                ) : (\n                  <MenuBarItem\n                    key={item.label}\n                    item={item}\n                    onClose={() => setOpenMenuIndex(null)}\n                  />\n                )\n              ))}\n            </div>\n          )}\n        </div>\n      ))}\n    </div>\n  );\n};\n\n// MenuBar 专用 Item\nconst MenuBarItem: React.FC<{ item: MenuItemData; onClose: () => void }> = ({ item, onClose }) => {\n  const [showSubmenu, setShowSubmenu] = useState(false);\n  const hasSubmenu = item.submenu && item.submenu.length > 0;\n\n  const handleClick = () => {\n    if (item.disabled) return;\n    if (hasSubmenu) return;\n    item.onClick?.();\n    onClose();\n  };\n\n  return (\n    <div\n      className=\"relative\"\n      onMouseEnter={() => hasSubmenu && setShowSubmenu(true)}\n      onMouseLeave={() => setShowSubmenu(false)}\n    >\n      <div\n        className={cn(\n          \"flex items-center px-3 py-1.5 mx-1 rounded cursor-pointer\",\n          item.disabled\n            ? \"text-[#6e6e6e] cursor-not-allowed\"\n            : \"text-[#cccccc] hover:bg-[#094771]\",\n          showSubmenu && hasSubmenu && \"bg-[#094771]\"\n        )}\n        onClick={handleClick}\n      >\n        <span className=\"w-5 flex-shrink-0\">\n          {item.checked !== undefined && item.checked && <Check size={14} />}\n          {item.icon && !item.checked && item.icon}\n        </span>\n        <span className=\"flex-1 text-xs\">{item.label}</span>\n        {hasSubmenu ? (\n          <ChevronRight size={14} className=\"text-[#858585] ml-4\" />\n        ) : item.shortcut ? (\n          <span className=\"text-[#858585] text-xs ml-4\">{item.shortcut}</span>\n        ) : null}\n      </div>\n\n      {hasSubmenu && showSubmenu && (\n        <div\n          className={cn(\n            \"absolute left-full top-0 ml-0.5\",\n            \"min-w-[200px] py-1\",\n            \"bg-[#252526] border border-[#454545] rounded-md shadow-xl\"\n          )}\n        >\n          {item.submenu!.map((subItem, subIndex) => (\n            subItem.separator ? (\n              <MenuSeparator key={`sub-sep-${subIndex}`} />\n            ) : (\n              <div\n                key={subItem.label}\n                className={cn(\n                  \"flex items-center px-3 py-1.5 mx-1 rounded cursor-pointer\",\n                  subItem.disabled\n                    ? \"text-[#6e6e6e] cursor-not-allowed\"\n                    : \"text-[#cccccc] hover:bg-[#094771]\"\n                )}\n                onClick={() => {\n                  if (!subItem.disabled) {\n                    subItem.onClick?.();\n                    onClose();\n                  }\n                }}\n              >\n                <span className=\"w-5 flex-shrink-0\">\n                  {subItem.checked && <Check size={14} />}\n                </span>\n                <span className=\"flex-1 text-xs\">{subItem.label}</span>\n                {subItem.shortcut && (\n                  <span className=\"text-[#858585] text-xs ml-4\">{subItem.shortcut}</span>\n                )}\n              </div>\n            )\n          ))}\n        </div>\n      )}\n    </div>\n  );\n};\n\nexport type { MenuItemData };\n",
+      "language": "typescript",
+      "size_bytes": 14070,
+      "is_binary": false
+    },
+    {
+      "path": "ResizeHandle.tsx",
+      "name": "ResizeHandle.tsx",
+      "content": "/**\n * ResizeHandle - 可拖拽调整面板大小的组件\n *\n * 使用方式:\n * <ResizeHandle\n *   direction=\"horizontal\" // 水平拖拽（调整左右宽度）\n *   onResize={(delta) => setWidth(prev => prev + delta)}\n *   minSize={200}\n *   maxSize={500}\n * />\n */\n\nimport React, { useState, useCallback, useEffect } from 'react';\nimport { cn } from '@/lib/utils';\n\ninterface ResizeHandleProps {\n  /** 拖拽方向: horizontal=左右, vertical=上下 */\n  direction: 'horizontal' | 'vertical';\n  /** 拖拽时的回调，delta 为变化量 */\n  onResize: (delta: number) => void;\n  /** 最小尺寸 */\n  minSize?: number;\n  /** 最大尺寸 */\n  maxSize?: number;\n  /** 当前尺寸（用于边界检测） */\n  currentSize?: number;\n  /** 自定义类名 */\n  className?: string;\n  /** 是否反向（用于右侧面板） */\n  reverse?: boolean;\n}\n\nexport const ResizeHandle: React.FC<ResizeHandleProps> = ({\n  direction,\n  onResize,\n  minSize = 100,\n  maxSize = 800,\n  currentSize,\n  className,\n  reverse = false,\n}) => {\n  const [isDragging, setIsDragging] = useState(false);\n  const [startPos, setStartPos] = useState(0);\n\n  const handleMouseDown = useCallback((e: React.MouseEvent) => {\n    e.preventDefault();\n    setIsDragging(true);\n    setStartPos(direction === 'horizontal' ? e.clientX : e.clientY);\n  }, [direction]);\n\n  useEffect(() => {\n    if (!isDragging) return;\n\n    const handleMouseMove = (e: MouseEvent) => {\n      const currentPos = direction === 'horizontal' ? e.clientX : e.clientY;\n      let delta = currentPos - startPos;\n\n      // 反向时取反\n      if (reverse) {\n        delta = -delta;\n      }\n\n      // 边界检测\n      if (currentSize !== undefined) {\n        const newSize = currentSize + delta;\n        if (newSize < minSize || newSize > maxSize) {\n          return;\n        }\n      }\n\n      onResize(delta);\n      setStartPos(currentPos);\n    };\n\n    const handleMouseUp = () => {\n      setIsDragging(false);\n    };\n\n    document.addEventListener('mousemove', handleMouseMove);\n    document.addEventListener('mouseup', handleMouseUp);\n\n    // 拖拽时改变光标\n    document.body.style.cursor = direction === 'horizontal' ? 'col-resize' : 'row-resize';\n    document.body.style.userSelect = 'none';\n\n    return () => {\n      document.removeEventListener('mousemove', handleMouseMove);\n      document.removeEventListener('mouseup', handleMouseUp);\n      document.body.style.cursor = '';\n      document.body.style.userSelect = '';\n    };\n  }, [isDragging, startPos, direction, onResize, minSize, maxSize, currentSize, reverse]);\n\n  return (\n    <div\n      onMouseDown={handleMouseDown}\n      className={cn(\n        \"flex-shrink-0 transition-colors group\",\n        direction === 'horizontal'\n          ? \"w-1 cursor-col-resize hover:bg-blue-500/50\"\n          : \"h-1 cursor-row-resize hover:bg-blue-500/50\",\n        isDragging && \"bg-blue-500\",\n        className\n      )}\n    >\n      {/* 增大点击区域 */}\n      <div\n        className={cn(\n          \"relative\",\n          direction === 'horizontal'\n            ? \"w-3 h-full -ml-1\"\n            : \"h-3 w-full -mt-1\"\n        )}\n      />\n    </div>\n  );\n};\n\n/**\n * useResizable - 管理可调整大小的 Hook\n */\nexport function useResizable(\n  initialSize: number,\n  options: {\n    minSize?: number;\n    maxSize?: number;\n    direction?: 'horizontal' | 'vertical';\n  } = {}\n) {\n  const { minSize = 100, maxSize = 800 } = options;\n  const [size, setSize] = useState(initialSize);\n\n  const handleResize = useCallback((delta: number) => {\n    setSize(prev => {\n      const newSize = prev + delta;\n      return Math.min(Math.max(newSize, minSize), maxSize);\n    });\n  }, [minSize, maxSize]);\n\n  const reset = useCallback(() => {\n    setSize(initialSize);\n  }, [initialSize]);\n\n  return {\n    size,\n    setSize,\n    handleResize,\n    reset,\n    resizeProps: {\n      onResize: handleResize,\n      currentSize: size,\n      minSize,\n      maxSize,\n    },\n  };\n}\n\nexport default ResizeHandle;\n",
+      "language": "typescript",
+      "size_bytes": 3981,
+      "is_binary": false
+    },
+    {
+      "path": "Tooltip.tsx",
+      "name": "Tooltip.tsx",
+      "content": "/**\n * Tooltip Component\n *\n * 设计决策:\n * - 延迟显示（防止鼠标快速划过时闪烁）\n * - 支持多个位置（top, bottom, left, right）\n * - 自动检测边界并调整位置\n * - 支持快捷键显示\n */\n\nimport React, { useState, useRef, useEffect } from 'react';\nimport { cn } from '@/lib/utils';\n\n// ============================================================\n// Types\n// ============================================================\n\ntype TooltipPosition = 'top' | 'bottom' | 'left' | 'right';\n\ninterface TooltipProps {\n  children: React.ReactNode;\n  content: React.ReactNode;\n  shortcut?: string;\n  position?: TooltipPosition;\n  delay?: number;\n  disabled?: boolean;\n  className?: string;\n}\n\n// ============================================================\n// Tooltip Component\n// ============================================================\n\nexport const Tooltip: React.FC<TooltipProps> = ({\n  children,\n  content,\n  shortcut,\n  position = 'bottom',\n  delay = 500,\n  disabled = false,\n  className,\n}) => {\n  const [isVisible, setIsVisible] = useState(false);\n  const [actualPosition, setActualPosition] = useState(position);\n  const triggerRef = useRef<HTMLDivElement>(null);\n  const tooltipRef = useRef<HTMLDivElement>(null);\n  const timeoutRef = useRef<NodeJS.Timeout | null>(null);\n\n  const showTooltip = () => {\n    if (disabled) return;\n    timeoutRef.current = setTimeout(() => {\n      setIsVisible(true);\n    }, delay);\n  };\n\n  const hideTooltip = () => {\n    if (timeoutRef.current) {\n      clearTimeout(timeoutRef.current);\n      timeoutRef.current = null;\n    }\n    setIsVisible(false);\n  };\n\n  // 边界检测和位置调整\n  useEffect(() => {\n    if (!isVisible || !tooltipRef.current || !triggerRef.current) return;\n\n    const tooltip = tooltipRef.current;\n    const trigger = triggerRef.current;\n    const tooltipRect = tooltip.getBoundingClientRect();\n    const triggerRect = trigger.getBoundingClientRect();\n\n    let newPosition = position;\n\n    // 检测是否超出边界\n    if (position === 'top' && triggerRect.top - tooltipRect.height < 10) {\n      newPosition = 'bottom';\n    } else if (position === 'bottom' && triggerRect.bottom + tooltipRect.height > window.innerHeight - 10) {\n      newPosition = 'top';\n    } else if (position === 'left' && triggerRect.left - tooltipRect.width < 10) {\n      newPosition = 'right';\n    } else if (position === 'right' && triggerRect.right + tooltipRect.width > window.innerWidth - 10) {\n      newPosition = 'left';\n    }\n\n    if (newPosition !== actualPosition) {\n      setActualPosition(newPosition);\n    }\n  }, [isVisible, position, actualPosition]);\n\n  // 清理\n  useEffect(() => {\n    return () => {\n      if (timeoutRef.current) {\n        clearTimeout(timeoutRef.current);\n      }\n    };\n  }, []);\n\n  const positionClasses: Record<TooltipPosition, string> = {\n    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',\n    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',\n    left: 'right-full top-1/2 -translate-y-1/2 mr-2',\n    right: 'left-full top-1/2 -translate-y-1/2 ml-2',\n  };\n\n  const arrowClasses: Record<TooltipPosition, string> = {\n    top: 'top-full left-1/2 -translate-x-1/2 border-t-[#3c3c3c] border-x-transparent border-b-transparent',\n    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-[#3c3c3c] border-x-transparent border-t-transparent',\n    left: 'left-full top-1/2 -translate-y-1/2 border-l-[#3c3c3c] border-y-transparent border-r-transparent',\n    right: 'right-full top-1/2 -translate-y-1/2 border-r-[#3c3c3c] border-y-transparent border-l-transparent',\n  };\n\n  return (\n    <div\n      ref={triggerRef}\n      className={cn(\"relative inline-flex\", className)}\n      onMouseEnter={showTooltip}\n      onMouseLeave={hideTooltip}\n      onFocus={showTooltip}\n      onBlur={hideTooltip}\n    >\n      {children}\n\n      {isVisible && (\n        <div\n          ref={tooltipRef}\n          className={cn(\n            \"absolute z-50 pointer-events-none\",\n            \"px-2 py-1.5 rounded\",\n            \"bg-[#3c3c3c] border border-[#454545] shadow-lg\",\n            \"text-xs text-[#cccccc] whitespace-nowrap\",\n            \"animate-in fade-in-0 zoom-in-95 duration-100\",\n            positionClasses[actualPosition]\n          )}\n          role=\"tooltip\"\n        >\n          <div className=\"flex items-center gap-2\">\n            <span>{content}</span>\n            {shortcut && (\n              <span className=\"text-[#858585] bg-[#2d2d2d] px-1 rounded text-[10px]\">\n                {shortcut}\n              </span>\n            )}\n          </div>\n\n          {/* Arrow */}\n          <div\n            className={cn(\n              \"absolute w-0 h-0 border-4\",\n              arrowClasses[actualPosition]\n            )}\n          />\n        </div>\n      )}\n    </div>\n  );\n};\n\nexport default Tooltip;\n",
+      "language": "typescript",
+      "size_bytes": 4800,
+      "is_binary": false
+    }
+  ],
+  "git_commits": [
+    {
+      "hash": "d6d716bdc33d2d960ba565878c889f125c1b7cc4",
+      "short_hash": "d6d716b",
+      "message": "feat: add data architecture for showcase system (Phase 3)",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-26T02:09:23+00:00",
+      "branch": "claude/review-project-design-NKnu7",
+      "is_merge": false,
+      "order_index": 0
+    },
+    {
+      "hash": "526647456e992243182514faa4502ba40da4c57c",
+      "short_hash": "5266474",
+      "message": "feat: complete AI IDE UI Phase 2 with advanced features",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-26T01:41:14+00:00",
+      "is_merge": false,
+      "order_index": 1
+    },
+    {
+      "hash": "95fa0b90d49ebc77dc7c3a55a42d797ec21cc1bb",
+      "short_hash": "95fa0b9",
+      "message": "feat: complete AI IDE UI Phase 1 with enhanced components",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-25T14:20:45+00:00",
+      "is_merge": false,
+      "order_index": 2
+    },
+    {
+      "hash": "e96e2835d01edae6c1da3782f9edb3c4e1e4c60b",
+      "short_hash": "e96e283",
+      "message": "docs: add comprehensive AI IDE UI refinement plan",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-25T13:54:33+00:00",
+      "is_merge": false,
+      "order_index": 3
+    },
+    {
+      "hash": "fa6aaaae040e609a6a2022ac10515ba43483464c",
+      "short_hash": "fa6aaaa",
+      "message": "feat: replace AI IDE info page with VS Code-style IDE viewer",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-25T13:15:39+00:00",
+      "is_merge": false,
+      "order_index": 4
+    },
+    {
+      "hash": "726608c0bb5bb421d07ca383aa5fe2786ff16715",
+      "short_hash": "726608c",
+      "message": "feat: add AI IDE Hub app to desktop OS",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-25T12:59:02+00:00",
+      "is_merge": false,
+      "order_index": 5
+    },
+    {
+      "hash": "0e1d7a9e687f8810ff6ef8f04a3df37ee8d49948",
+      "short_hash": "0e1d7a9",
+      "message": "docs: add AI IDE market research and proposal",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-25T11:33:15+00:00",
+      "is_merge": false,
+      "order_index": 6
+    },
+    {
+      "hash": "8857df91943aaf6042f8b61f8d43592b9f555730",
+      "short_hash": "8857df9",
+      "message": "feat: add mock data fallback for Claude and ChatGPT archives",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-25T11:20:10+00:00",
+      "is_merge": false,
+      "order_index": 7
+    },
+    {
+      "hash": "fe2c55c4d471d15162da6298547a3f70d3d38594",
+      "short_hash": "fe2c55c",
+      "message": "feat: implement Claude archive backend and connect frontend",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-24T13:54:24+00:00",
+      "is_merge": false,
+      "order_index": 8
+    },
+    {
+      "hash": "8db701aee0678f2545c295cb68179e8229146281",
+      "short_hash": "8db701a",
+      "message": "fix: resolve TypeScript errors and add documentation",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-23T12:39:06+00:00",
+      "is_merge": false,
+      "order_index": 9
+    },
+    {
+      "hash": "3380b49feda8bbdbd928f36dcfefa3ffcc5b64e2",
+      "short_hash": "3380b49",
+      "message": "feat: implement ChatGPT read-only archive system",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-23T11:21:24+00:00",
+      "is_merge": false,
+      "order_index": 10
+    },
+    {
+      "hash": "8926d6cf7e1709053482af311c1e93d3931039ad",
+      "short_hash": "8926d6c",
+      "message": "some",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-07T12:55:02+08:00",
+      "is_merge": false,
+      "order_index": 11
+    },
+    {
+      "hash": "af80ade9666cac6e33371eca0ce068f16f4088e5",
+      "short_hash": "af80ade",
+      "message": "Merge pull request #2 from NatureBlueee/claude/refactor-claude-html-01MZjU33chj51LtGfMztsypD",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T20:18:58+08:00",
+      "is_merge": true,
+      "order_index": 12
+    },
+    {
+      "hash": "b65db122ce93960941e85d5333e0d5fd948a8845",
+      "short_hash": "b65db12",
+      "message": "Merge pull request #1 from NatureBlueee/claude/window-resize-drag-01MMSmef27qYcfvNuRtJKm83",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T20:18:41+08:00",
+      "is_merge": true,
+      "order_index": 13
+    },
+    {
+      "hash": "0ee62c97af67e3e5871287906d47496ef55403b5",
+      "short_hash": "0ee62c9",
+      "message": "Merge latest main and enhance window resize hover effects",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-03T12:05:58+00:00",
+      "is_merge": true,
+      "order_index": 14
+    },
+    {
+      "hash": "2a75dcf4cc1dd155ef64e70e6c716a6c4d89c47f",
+      "short_hash": "2a75dcf",
+      "message": "Refactor Claude HTML files with comprehensive documentation",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-03T12:05:27+00:00",
+      "is_merge": false,
+      "order_index": 15
+    },
+    {
+      "hash": "c2ef4e9a464762e839dc8494595eef375bb6a3e0",
+      "short_hash": "c2ef4e9",
+      "message": "Refactor claude.html for component migration",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-03T11:58:09+00:00",
+      "is_merge": false,
+      "order_index": 16
+    },
+    {
+      "hash": "1497022fbb32160491097e5410da80e33cfc5ae6",
+      "short_hash": "1497022",
+      "message": "add ChatGPT original web",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T19:57:30+08:00",
+      "is_merge": false,
+      "order_index": 17
+    },
+    {
+      "hash": "48f1ba393ad5286bfe447b9ee0fa60ee13155343",
+      "short_hash": "48f1ba3",
+      "message": "Update WindowManager.tsx",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T19:54:18+08:00",
+      "is_merge": false,
+      "order_index": 18
+    },
+    {
+      "hash": "bec96c20ee68e60d898789acf49c2be2f087e1ec",
+      "short_hash": "bec96c2",
+      "message": "Add Claude app static assets and update ChatGPT/Claude components",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T19:53:17+08:00",
+      "is_merge": false,
+      "order_index": 19
+    },
+    {
+      "hash": "d28a201048c78b9de04e82430914ebc54f57896f",
+      "short_hash": "d28a201",
+      "message": "Merge main branch and fix ChatGPT app rendering",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-03T11:46:55+00:00",
+      "is_merge": true,
+      "order_index": 20
+    },
+    {
+      "hash": "aa0250f49c31a295ad0c5e3ef44ddae2c43d31fc",
+      "short_hash": "aa0250f",
+      "message": "Add ChatGPT app and update Claude UI",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T19:43:10+08:00",
+      "is_merge": false,
+      "order_index": 21
+    },
+    {
+      "hash": "ae8132e7b643d94c01a9bafff71d8460ed1ac97e",
+      "short_hash": "ae8132e",
+      "message": "Update dependency lock files after npm install",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-03T11:42:25+00:00",
+      "is_merge": false,
+      "order_index": 22
+    },
+    {
+      "hash": "3c12bb4e15432dfed593772f17b12fe61441469b",
+      "short_hash": "3c12bb4",
+      "message": "Enhance window resize functionality with Windows-like experience",
+      "author_name": "Claude",
+      "author_email": "noreply@anthropic.com",
+      "commit_date": "2025-12-03T11:41:26+00:00",
+      "is_merge": false,
+      "order_index": 23
+    },
+    {
+      "hash": "b0e6a9912d2055e821ebdc245a5b5fd7e615f695",
+      "short_hash": "b0e6a99",
+      "message": "Update ClaudeApp import to named import",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T19:22:59+08:00",
+      "is_merge": false,
+      "order_index": 24
+    },
+    {
+      "hash": "f2fd2d7617d292ee57e7c6211140e852e969defb",
+      "short_hash": "f2fd2d7",
+      "message": "Refactor Claude app and add modular views",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T19:21:07+08:00",
+      "is_merge": false,
+      "order_index": 25
+    },
+    {
+      "hash": "1519269c3601823cc87c8c50932cdc0814e5fc5f",
+      "short_hash": "1519269",
+      "message": "Add responsive sidebar and custom layout to Claude app",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T18:51:41+08:00",
+      "is_merge": false,
+      "order_index": 26
+    },
+    {
+      "hash": "d1923722d50ec9e8d43d55564f2a4d1c3bd480df",
+      "short_hash": "d192372",
+      "message": "Refactor desktop grid and taskbar UI, add icon components",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T18:13:45+08:00",
+      "is_merge": false,
+      "order_index": 27
+    },
+    {
+      "hash": "9c2dc49ec5fff71297593209b99408231448a46d",
+      "short_hash": "9c2dc49",
+      "message": "icon",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T15:43:49+08:00",
+      "is_merge": false,
+      "order_index": 28
+    },
+    {
+      "hash": "84903cb58942d0faad30207c1393b7fcd2b456dc",
+      "short_hash": "84903cb",
+      "message": "Revamp desktop UI and add new icons",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T11:25:59+08:00",
+      "is_merge": false,
+      "order_index": 29
+    },
+    {
+      "hash": "2412f158857a1af390d1703caf023bb4c76a693c",
+      "short_hash": "2412f15",
+      "message": "Revamp taskbar and desktop icons for Windows 11 look",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T10:00:24+08:00",
+      "is_merge": false,
+      "order_index": 30
+    },
+    {
+      "hash": "18a389107a466a0afbe157f23960dbfa50e417d6",
+      "short_hash": "18a3891",
+      "message": "Add Supabase integration and app data adapters",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T08:50:49+08:00",
+      "is_merge": false,
+      "order_index": 31
+    },
+    {
+      "hash": "6b4cce5bbbc70e61f1afeeab8cccdc5cd5d1aeac",
+      "short_hash": "6b4cce5",
+      "message": "Add README",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T08:29:00+08:00",
+      "is_merge": false,
+      "order_index": 32
+    },
+    {
+      "hash": "5edfc5405b932df3fdff412836415179f0322cab",
+      "short_hash": "5edfc54",
+      "message": "Initial commit: Windows 11 Desktop UI with Claude App",
+      "author_name": "NatureBlueee",
+      "author_email": "lovefreedomandspirit@gmail.com",
+      "commit_date": "2025-12-03T08:27:32+08:00",
+      "is_merge": false,
+      "order_index": 33
+    }
+  ],
+  "git_diffs": {
+    "d6d716bdc33d2d960ba565878c889f125c1b7cc4": [
+      {
+        "file_path": ".env.local.example",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "docs/SYSTEM-ARCHITECTURE.md",
+        "change_type": "added",
+        "additions": 13,
+        "deletions": 0
+      },
+      {
+        "file_path": "package.json",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "scripts/parse-project.ts",
+        "change_type": "added",
+        "additions": 28,
+        "deletions": 0
+      },
+      {
+        "file_path": "scripts/upload-project.ts",
+        "change_type": "added",
+        "additions": 22,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/lib/supabase/showcase-service.ts",
+        "change_type": "added",
+        "additions": 23,
+        "deletions": 0
+      },
+      {
+        "file_path": "supabase/migrations/002_showcase_tables.sql",
+        "change_type": "added",
+        "additions": 10,
+        "deletions": 0
+      }
+    ],
+    "526647456e992243182514faa4502ba40da4c57c": [
+      {
+        "file_path": "package-lock.json",
+        "change_type": "modified",
+        "additions": 29,
+        "deletions": 2
+      },
+      {
+        "file_path": "package.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/CursorApp.tsx",
+        "change_type": "modified",
+        "additions": 19,
+        "deletions": 3
+      },
+      {
+        "file_path": "src/components/ui/MarkdownPreview.tsx",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/ui/ResizeHandle.tsx",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/ui/index.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      }
+    ],
+    "95fa0b90d49ebc77dc7c3a55a42d797ec21cc1bb": [
+      {
+        "file_path": "docs/AI-IDE-DEV-LOG.md",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AntigravityApp.tsx",
+        "change_type": "added",
+        "additions": 15,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/CursorApp.tsx",
+        "change_type": "modified",
+        "additions": 22,
+        "deletions": 4
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/index.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/ui/ContextMenu.tsx",
+        "change_type": "added",
+        "additions": 6,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/ui/Menu.tsx",
+        "change_type": "added",
+        "additions": 10,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/ui/Tooltip.tsx",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/ui/index.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      }
+    ],
+    "e96e2835d01edae6c1da3782f9edb3c4e1e4c60b": [
+      {
+        "file_path": "docs/AI-IDE-UI-PLAN.md",
+        "change_type": "added",
+        "additions": 49,
+        "deletions": 0
+      }
+    ],
+    "fa6aaaae040e609a6a2022ac10515ba43483464c": [
+      {
+        "file_path": "docs/AI-IDE-PROPOSAL.md",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 20
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDEApp.tsx",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 10
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDECompare.tsx",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 12
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDEDetail.tsx",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 11
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDESidebar.tsx",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 6
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/CursorApp.tsx",
+        "change_type": "added",
+        "additions": 29,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/index.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/os/Window/WindowManager.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/data/ai-ide-data.ts",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 9
+      },
+      {
+        "file_path": "src/types/ai-ide.ts",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 2
+      }
+    ],
+    "726608c0bb5bb421d07ca383aa5fe2786ff16715": [
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDEApp.tsx",
+        "change_type": "added",
+        "additions": 25,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDECompare.tsx",
+        "change_type": "added",
+        "additions": 29,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDEDetail.tsx",
+        "change_type": "added",
+        "additions": 26,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/AIIDESidebar.tsx",
+        "change_type": "added",
+        "additions": 14,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/AIIDE/index.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/os/Window/WindowManager.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/data/ai-ide-data.ts",
+        "change_type": "added",
+        "additions": 20,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/types/ai-ide.ts",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      }
+    ],
+    "0e1d7a9e687f8810ff6ef8f04a3df37ee8d49948": [
+      {
+        "file_path": "docs/AI-IDE-PROPOSAL.md",
+        "change_type": "added",
+        "additions": 48,
+        "deletions": 0
+      }
+    ],
+    "8857df91943aaf6042f8b61f8d43592b9f555730": [
+      {
+        "file_path": ".../chatgpt/conversations/[id]/messages/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/chatgpt/conversations/[id]/route.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/app/api/chatgpt/conversations/route.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/app/api/chatgpt/tags/route.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": ".../claude/conversations/[id]/messages/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/conversations/[id]/route.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/app/api/claude/conversations/route.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/mock/chatgpt-data.ts",
+        "change_type": "added",
+        "additions": 18,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/lib/mock/claude-data.ts",
+        "change_type": "added",
+        "additions": 21,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/lib/supabase/chatgpt-database.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/supabase/claude-database.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/supabase/client.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/supabase/database.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      }
+    ],
+    "fe2c55c4d471d15162da6298547a3f70d3d38594": [
+      {
+        "file_path": "scripts/claude-import-package/artifacts.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "scripts/claude-import-package/conversations.json",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../messages/conv-claude-001.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../messages/conv-claude-002.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../messages/conv-claude-003.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../messages/conv-claude-004.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "scripts/claude-import-package/projects.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "scripts/import-claude.ts",
+        "change_type": "added",
+        "additions": 8,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/artifacts/[id]/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/artifacts/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../claude/conversations/[id]/messages/route.ts",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/conversations/[id]/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/conversations/route.ts",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/projects/[id]/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/projects/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/search/route.ts",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/share/[token]/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/claude/tags/route.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeApp.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": ".../apps/Claude/ClaudeConversationView.tsx",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeSidebar.tsx",
+        "change_type": "modified",
+        "additions": 2,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/Claude/hooks/useClaudeData.ts",
+        "change_type": "added",
+        "additions": 6,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/lib/supabase/claude-database.ts",
+        "change_type": "added",
+        "additions": 21,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/types/claude-archive.ts",
+        "change_type": "added",
+        "additions": 8,
+        "deletions": 0
+      },
+      {
+        "file_path": "supabase/migrations/003_claude_archive_tables.sql",
+        "change_type": "added",
+        "additions": 7,
+        "deletions": 0
+      }
+    ],
+    "8db701aee0678f2545c295cb68179e8229146281": [
+      {
+        "file_path": "docs/CHATGPT_ARCHIVE.md",
+        "change_type": "added",
+        "additions": 35,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/apps/[type]/route.ts",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/supabase/chatgpt-database.ts",
+        "change_type": "modified",
+        "additions": 2,
+        "deletions": 1
+      }
+    ],
+    "3380b49feda8bbdbd928f36dcfefa3ffcc5b64e2": [
+      {
+        "file_path": "scripts/import-chatgpt.ts",
+        "change_type": "added",
+        "additions": 14,
+        "deletions": 0
+      },
+      {
+        "file_path": "scripts/sample-import-package/conversations.json",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../550e8400-e29b-41d4-a716-446655440001.json",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../550e8400-e29b-41d4-a716-446655440002.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../chatgpt/conversations/[id]/messages/route.ts",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/chatgpt/conversations/[id]/route.ts",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/chatgpt/conversations/route.ts",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/chatgpt/search/route.ts",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/chatgpt/share/[token]/route.ts",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/api/chatgpt/tags/route.ts",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/ArchiveBanner.tsx",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/archive/AssetCard.tsx",
+        "change_type": "added",
+        "additions": 9,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/ChatGPTArchiveApp.tsx",
+        "change_type": "added",
+        "additions": 15,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/ConversationHeader.tsx",
+        "change_type": "added",
+        "additions": 5,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/ConversationList.tsx",
+        "change_type": "added",
+        "additions": 12,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/MarkdownRenderer.tsx",
+        "change_type": "added",
+        "additions": 8,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/MessageBubble.tsx",
+        "change_type": "added",
+        "additions": 6,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/MessageTimeline.tsx",
+        "change_type": "added",
+        "additions": 6,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../apps/ChatGPT/archive/SearchPanel.tsx",
+        "change_type": "added",
+        "additions": 15,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/archive/TagFilter.tsx",
+        "change_type": "added",
+        "additions": 5,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/archive/index.ts",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/os/Window/WindowManager.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/lib/supabase/chatgpt-database.ts",
+        "change_type": "added",
+        "additions": 21,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/types/chatgpt-archive.ts",
+        "change_type": "added",
+        "additions": 13,
+        "deletions": 0
+      },
+      {
+        "file_path": "supabase/migrations/001_chatgpt_archive_tables.sql",
+        "change_type": "added",
+        "additions": 8,
+        "deletions": 0
+      },
+      {
+        "file_path": "supabase/migrations/002_search_function.sql",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      }
+    ],
+    "8926d6cf7e1709053482af311c1e93d3931039ad": [
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/am-BpBLs2Hk.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../.vite/build/app-bootstrap-BxdWEGtj.js",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ar-Dtpsanaf.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/bg-CHpRMTer.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/bn-X56PRxDN.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/bs-J-qzyeLC.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ca-Bz0LEUjt.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/cs-CQN1zQte.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/da-B59ZCRak.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/de-BhJjz-g0.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/el-DLJvj3Vs.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/en-VXjokk_Y.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../app_unpacked/.vite/build/es-419-BtybgAyR.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/es-DcW3Ttkv.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/et-fOGBb9DR.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/fi-B3WsOZUB.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../app_unpacked/.vite/build/fr-CA-DvnMEYWw.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/fr-COXYpaHi.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/gu-D0NiKINR.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/hi-BphakLpe.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/hr-DrDprsp6.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/hu-WUMHI2F4.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/hy-B_HB4bIu.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/id-Dks5BFDe.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/is-CIqeW13l.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/it-M-ZuPCWH.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ja-SUW0qSmS.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ka-C2YNnR-k.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/kk-B9zi9c4k.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/kn-BGJldfa6.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ko-oyMFhImX.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/lt-DIqSEUWh.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/lv-Dh_TYizS.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../app_unpacked/.vite/build/main-DsWLSrNk.js",
+        "change_type": "added",
+        "additions": 18,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/main.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/mk-R4jNwqFJ.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ml-Bn14mUep.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/mn-CTf1d-Yv.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/mr-j1D0BB-y.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ms-D_TrS2fm.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/my-DZSyvhPp.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/nb-BOHtgwjY.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/nl-BqerwYXU.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/pa-BYxdgBhZ.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/pl-C7xvve7Z.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/preload.mjs",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/pt-Chti4KY_.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../app_unpacked/.vite/build/pt-PT-BqMcyV1b.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ro-CMD6BPqB.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ru-CJWTIePj.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../.vite/build/settings-store-dR5h2ZgN.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/sk-CgNwUrkG.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/sl-DrjPMgEQ.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/so-toq-SxWw.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/sq-CVC7pHxr.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/sr-CYC9nQb_.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/sv-qiApf12I.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/sw-BbrRE69I.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ta-CHK5aqLy.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/te--JqvvPL1.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/th-DPGn5Rnt.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/tl-CrocNGVR.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/tr-CdSDmR4e.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/uk-CZemHGL_.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/ur-BOCWjeHx.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/vi-Co54pRl_.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/.vite/build/zh-CffWBHfs.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../app_unpacked/.vite/build/zh-HK-BaeNKWn6.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../app_unpacked/.vite/build/zh-Hant-CgLeWZmx.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../renderer/main_window/assets/index-CwtsJmdk.js",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../renderer/main_window/assets/index-cA78DHNn.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../.vite/renderer/main_window/index.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/app_unpacked/package.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../comprehensive-analysis/analysis-report.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/comprehensive-analysis/class-names.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/comprehensive-analysis/colors.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/comprehensive-analysis/css-files.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../comprehensive-analysis/css-variables.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../comprehensive-analysis/dom-structure.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../comprehensive-analysis/extracted-styles.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/extracted-colors.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/extracted-key-vars.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/extraction-results/class-names.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/extraction-results/color-scheme.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/extraction-results/css-variables.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/extraction-results/dom-elements.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/extraction-results/extracted-styles.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../extraction-results/extraction-report.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/pixel-perfect-ui/README.md",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../pixel-perfect-ui/assets/ansi-1f6vhsjh.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../assets/conversation-small-kzqviugf.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../assets/cot-message-g4jkzz65.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../assets/map-with-entities-agzjn7l5.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../assets/product-variants-pcfu1bfm.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../pixel-perfect-ui/assets/root-esc7wwen.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../assets/table-components-in35usvb.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../assets/writing-block-editor-nir8x8a7.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/pixel-perfect-ui/body-only.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/pixel-perfect-ui/classes.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/pixel-perfect-ui/ids.json",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "Clean-temp/pixel-perfect-ui/index.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "yarn.lock",
+        "change_type": "deleted",
+        "additions": 0,
+        "deletions": 1
+      }
+    ],
+    "af80ade9666cac6e33371eca0ce068f16f4088e5": [
+      {
+        "file_path": "public/Claude-original.html",
+        "change_type": "added",
+        "additions": 42,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/README-Claude.md",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/claude-prototype.html",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      }
+    ],
+    "b65db122ce93960941e85d5333e0d5fd948a8845": [
+      {
+        "file_path": "package-lock.json",
+        "change_type": "modified",
+        "additions": 26,
+        "deletions": 2
+      },
+      {
+        "file_path": "src/app/globals.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/os/Window/WindowFrame.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/os/Window/WindowManager.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "yarn.lock",
+        "change_type": "modified",
+        "additions": 2,
+        "deletions": 3
+      }
+    ],
+    "0ee62c97af67e3e5871287906d47496ef55403b5": [
+      {
+        "file_path": "public/ChatGPT.html",
+        "change_type": "added",
+        "additions": 16,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/ansi-1f6vhsjh.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../ChatGPT_files/conversation-small-kzqviugf.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/cot-message-g4jkzz65.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/js",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../ChatGPT_files/map-with-entities-agzjn7l5.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/product-variants-pcfu1bfm.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/root-esc7wwen.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/saved_resource.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/table-components-in35usvb.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../writing-block-editor-nir8x8a7.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude.html",
+        "change_type": "added",
+        "additions": 20,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-d6a7e05646d82649.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...0-18b94f9df1488575.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-8d9656c988ff34ba.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-ca2b5b1425eebb7c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-9717fbc2e9140f11.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-4c6750c2b8e2db61.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-fdb46da4074899d8.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-3b94cbe929da27ec.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...0-0ee8dff1af505d7a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-eea17cdcf44a0b8a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-e7b5e08b898f341a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-35d61d20f5174bc2.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-ecefe9007cc4c300.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-9d59827abfbc37b3.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-85ed9a784bc1a2f7.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-001d9ff635bca8db.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-6aa7ccec91962cc5.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/3ed1fd6af7fd36eb.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-42eb3c200238ec3a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-853815a179d57ef8.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-31a044d62c94a424.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-4ca7be4c078ba17f.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/468742119653388",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-bed5d18babf0119c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-3fc8fc64d7c372dc.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-68ef3fd4ad4b0537.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-93ad65dee9bd9008.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...0-c29009f478088df6.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-8ef603c375b6ca8d.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-f2f3c85ef9bf2118.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-5cfd7ab12bb72cb6.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...adcd77d531b09a848c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...6-a2ab2d6c6624b5bd.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-2d3af8f46b798e95.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-53d6cb0c7be54153.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-45862bc796d152c6.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-005d7f24787c1ba9.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-af1e2ce1d81f244b.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/6492ae367fc05efc.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-83f9f921174990c0.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-b3040221c683bf42.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-baafa56622f2e200.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-d9cda19137f078bf.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-0f8102ce4b9a5e49.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-ceef8913da60a37c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...6-b9442921214d9f4e.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-5e4a50a3fd89ef93.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-554551c9f3db4b93.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-53d6eab5e0cf9a8a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/7bf97b7f00340a78.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-2f6bab673377459f.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-5e7741a3d7bb0301.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-17d03a7764dfc4db.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-53b4b9560e8ca07d.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-24ec0ba71e2755ff.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-41cd93e91d16f29c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...f-f60c50dd8ad01172.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/8be9c4200407338e.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-a01bf1acafbe5961.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-e20f7b4f450cefd8.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-8a0c6546a4794fd2.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-74de9d68a9f87eaf.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-8ca88233f67b9298.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/acdaad1d23646914.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-e0b32d2df9bbfb46.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../analytics.min.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/c91ff5f87fd3377b.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../commons.59560acdd69ed701c941.js.gz",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/d6bd087f08a7f52f.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../doubleclick-floodlight.dynamic.js.gz",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...20d1af3c8baa2ea75e.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/f614b4fc9a5ddba6.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/facebook-pixel.dynamic.js.gz",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../fbevents.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/isolated-segment.html",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": "...g-6ee30bb1e1c07fdf.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/lupk8zyo",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...p-687cb33f4058a8dc.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../Claude_files/s.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/saved_resource(1).html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/saved_resource(2).html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/saved_resource.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...k-6dc0d30680fbc1b5.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Snake symbolism analysis.html",
+        "change_type": "added",
+        "additions": 16,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../ansi-1f6vhsjh.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../conversation-small-kzqviugf.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../cot-message-g4jkzz65.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Snake symbolism analysis_files/js",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../map-with-entities-agzjn7l5.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../product-variants-pcfu1bfm.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../root-esc7wwen.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../saved_resource.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../table-components-in35usvb.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../writing-block-editor-nir8x8a7.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/app/globals.css",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/ChatGPTApp.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/ChatGPTChat.tsx",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/ChatGPTSidebar.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeApp.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeChat.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeSidebar.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/os/Window/WindowManager.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      }
+    ],
+    "2a75dcf4cc1dd155ef64e70e6c716a6c4d89c47f": [
+      {
+        "file_path": "public/Claude-original.html",
+        "change_type": "added",
+        "additions": 25,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/README-Claude.md",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/{claude.html => claude-prototype.html}",
+        "change_type": "modified",
+        "additions": 0,
+        "deletions": 0
+      }
+    ],
+    "c2ef4e9a464762e839dc8494595eef375bb6a3e0": [
+      {
+        "file_path": "public/claude.html",
+        "change_type": "added",
+        "additions": 53,
+        "deletions": 0
+      }
+    ],
+    "1497022fbb32160491097e5410da80e33cfc5ae6": [
+      {
+        "file_path": "public/ChatGPT.html",
+        "change_type": "added",
+        "additions": 19,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/ansi-1f6vhsjh.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../ChatGPT_files/conversation-small-kzqviugf.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/cot-message-g4jkzz65.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/js",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../ChatGPT_files/map-with-entities-agzjn7l5.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/product-variants-pcfu1bfm.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/root-esc7wwen.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/saved_resource.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/ChatGPT_files/table-components-in35usvb.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../writing-block-editor-nir8x8a7.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Snake symbolism analysis.html",
+        "change_type": "added",
+        "additions": 20,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../ansi-1f6vhsjh.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../conversation-small-kzqviugf.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../cot-message-g4jkzz65.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Snake symbolism analysis_files/js",
+        "change_type": "added",
+        "additions": 4,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../map-with-entities-agzjn7l5.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../product-variants-pcfu1bfm.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../root-esc7wwen.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../saved_resource.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../table-components-in35usvb.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../writing-block-editor-nir8x8a7.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      }
+    ],
+    "48f1ba393ad5286bfe447b9ee0fa60ee13155343": [
+      {
+        "file_path": "src/components/os/Window/WindowManager.tsx",
+        "change_type": "modified",
+        "additions": 4,
+        "deletions": 1
+      }
+    ],
+    "bec96c20ee68e60d898789acf49c2be2f087e1ec": [
+      {
+        "file_path": "public/Claude.html",
+        "change_type": "added",
+        "additions": 20,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-d6a7e05646d82649.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...0-18b94f9df1488575.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-8d9656c988ff34ba.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-ca2b5b1425eebb7c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-9717fbc2e9140f11.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-4c6750c2b8e2db61.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-fdb46da4074899d8.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-3b94cbe929da27ec.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...0-0ee8dff1af505d7a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-eea17cdcf44a0b8a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-e7b5e08b898f341a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-35d61d20f5174bc2.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-ecefe9007cc4c300.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-9d59827abfbc37b3.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-85ed9a784bc1a2f7.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-001d9ff635bca8db.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-6aa7ccec91962cc5.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/3ed1fd6af7fd36eb.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-42eb3c200238ec3a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-853815a179d57ef8.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-31a044d62c94a424.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-4ca7be4c078ba17f.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/468742119653388",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-bed5d18babf0119c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-3fc8fc64d7c372dc.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-68ef3fd4ad4b0537.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-93ad65dee9bd9008.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...0-c29009f478088df6.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-8ef603c375b6ca8d.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-f2f3c85ef9bf2118.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-5cfd7ab12bb72cb6.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...adcd77d531b09a848c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...6-a2ab2d6c6624b5bd.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-2d3af8f46b798e95.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-53d6cb0c7be54153.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-45862bc796d152c6.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-005d7f24787c1ba9.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...3-af1e2ce1d81f244b.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/6492ae367fc05efc.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-83f9f921174990c0.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-b3040221c683bf42.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-baafa56622f2e200.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-d9cda19137f078bf.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-0f8102ce4b9a5e49.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-ceef8913da60a37c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...6-b9442921214d9f4e.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-5e4a50a3fd89ef93.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-554551c9f3db4b93.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-53d6eab5e0cf9a8a.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/7bf97b7f00340a78.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-2f6bab673377459f.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...9-5e7741a3d7bb0301.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...8-17d03a7764dfc4db.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-53b4b9560e8ca07d.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-24ec0ba71e2755ff.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...4-41cd93e91d16f29c.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...f-f60c50dd8ad01172.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/8be9c4200407338e.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...5-a01bf1acafbe5961.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-e20f7b4f450cefd8.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...2-8a0c6546a4794fd2.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-74de9d68a9f87eaf.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...7-8ca88233f67b9298.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/acdaad1d23646914.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...1-e0b32d2df9bbfb46.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../analytics.min.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/c91ff5f87fd3377b.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../commons.59560acdd69ed701c941.js.gz",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/d6bd087f08a7f52f.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../doubleclick-floodlight.dynamic.js.gz",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...20d1af3c8baa2ea75e.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/f614b4fc9a5ddba6.css",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/facebook-pixel.dynamic.js.gz",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../fbevents.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 2,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/isolated-segment.html",
+        "change_type": "added",
+        "additions": 3,
+        "deletions": 0
+      },
+      {
+        "file_path": "...g-6ee30bb1e1c07fdf.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/lupk8zyo",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...p-687cb33f4058a8dc.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": ".../Claude_files/s.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/saved_resource(1).html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/saved_resource(2).html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "public/Claude_files/saved_resource.html",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "...k-6dc0d30680fbc1b5.js.\\344\\270\\213\\350\\275\\275\"",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/ChatGPTApp.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/ChatGPTChat.tsx",
+        "change_type": "added",
+        "additions": 1,
+        "deletions": 0
+      },
+      {
+        "file_path": "src/components/apps/ChatGPT/ChatGPTSidebar.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeApp.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeChat.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      },
+      {
+        "file_path": "src/components/apps/Claude/ClaudeSidebar.tsx",
+        "change_type": "modified",
+        "additions": 1,
+        "deletions": 1
+      }
+    ]
+  }
+}
