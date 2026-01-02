@@ -61,6 +61,186 @@ interface NotionDatabase {
 }
 
 // ============================================================
+// BlockRenderer - 渲染官方 API 返回的 blocks
+// ============================================================
+
+function BlockRenderer({ block }: { block: any }) {
+  const type = block.type;
+  const content = block[type];
+
+  switch (type) {
+    case 'paragraph':
+      return (
+        <p className="text-gray-800 leading-relaxed">
+          {renderRichText(content?.rich_text)}
+        </p>
+      );
+
+    case 'heading_1':
+      return (
+        <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-2">
+          {renderRichText(content?.rich_text)}
+        </h1>
+      );
+
+    case 'heading_2':
+      return (
+        <h2 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
+          {renderRichText(content?.rich_text)}
+        </h2>
+      );
+
+    case 'heading_3':
+      return (
+        <h3 className="text-lg font-medium text-gray-900 mt-3 mb-1">
+          {renderRichText(content?.rich_text)}
+        </h3>
+      );
+
+    case 'bulleted_list_item':
+      return (
+        <li className="ml-4 list-disc text-gray-800">
+          {renderRichText(content?.rich_text)}
+        </li>
+      );
+
+    case 'numbered_list_item':
+      return (
+        <li className="ml-4 list-decimal text-gray-800">
+          {renderRichText(content?.rich_text)}
+        </li>
+      );
+
+    case 'to_do':
+      return (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={content?.checked}
+            readOnly
+            className="rounded"
+          />
+          <span className={content?.checked ? 'line-through text-gray-500' : 'text-gray-800'}>
+            {renderRichText(content?.rich_text)}
+          </span>
+        </div>
+      );
+
+    case 'toggle':
+      return (
+        <details className="bg-gray-50 rounded p-2">
+          <summary className="cursor-pointer font-medium">
+            {renderRichText(content?.rich_text)}
+          </summary>
+        </details>
+      );
+
+    case 'code':
+      return (
+        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto">
+          <code>{renderRichText(content?.rich_text)}</code>
+        </pre>
+      );
+
+    case 'quote':
+      return (
+        <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700">
+          {renderRichText(content?.rich_text)}
+        </blockquote>
+      );
+
+    case 'callout':
+      return (
+        <div className="bg-gray-100 rounded-lg p-4 flex items-start gap-3">
+          {content?.icon?.emoji && <span className="text-xl">{content.icon.emoji}</span>}
+          <div>{renderRichText(content?.rich_text)}</div>
+        </div>
+      );
+
+    case 'divider':
+      return <hr className="border-gray-200 my-4" />;
+
+    case 'image':
+      const imageUrl = content?.file?.url || content?.external?.url;
+      return imageUrl ? (
+        <figure className="my-4">
+          <img src={imageUrl} alt="" className="rounded-lg max-w-full" />
+          {content?.caption?.[0]?.plain_text && (
+            <figcaption className="text-sm text-gray-500 mt-2 text-center">
+              {content.caption[0].plain_text}
+            </figcaption>
+          )}
+        </figure>
+      ) : null;
+
+    case 'child_page':
+      return (
+        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
+          <FileText size={16} className="text-gray-400" />
+          <span className="text-gray-800">{content?.title}</span>
+        </div>
+      );
+
+    case 'child_database':
+      return (
+        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
+          <Database size={16} className="text-gray-400" />
+          <span className="text-gray-800">{content?.title}</span>
+        </div>
+      );
+
+    default:
+      // 未知类型显示灰色占位符
+      return (
+        <div className="text-gray-400 text-sm italic">
+          [{type} block]
+        </div>
+      );
+  }
+}
+
+// 渲染富文本
+function renderRichText(richText: any[]): React.ReactNode {
+  if (!richText || richText.length === 0) return null;
+
+  return richText.map((text, index) => {
+    let content: React.ReactNode = text.plain_text;
+
+    if (text.annotations?.bold) {
+      content = <strong key={index}>{content}</strong>;
+    }
+    if (text.annotations?.italic) {
+      content = <em key={index}>{content}</em>;
+    }
+    if (text.annotations?.strikethrough) {
+      content = <s key={index}>{content}</s>;
+    }
+    if (text.annotations?.code) {
+      content = (
+        <code key={index} className="bg-gray-100 px-1 rounded text-sm font-mono">
+          {content}
+        </code>
+      );
+    }
+    if (text.href) {
+      content = (
+        <a
+          key={index}
+          href={text.href}
+          className="text-blue-600 hover:underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {content}
+        </a>
+      );
+    }
+
+    return <span key={index}>{content}</span>;
+  });
+}
+
+// ============================================================
 // Component
 // ============================================================
 
@@ -131,21 +311,32 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
     }
   };
 
+  // 页面内容状态 - 支持两种格式
+  const [pageData, setPageData] = useState<{ page: any; blocks: any[] } | null>(null);
+
   // 加载页面内容（使用 notion-client 获取 recordMap）
   const loadPageContent = async (pageId: string) => {
     setSelectedPageId(pageId);
     setIsLoadingContent(true);
     setError(null);
+    setRecordMap(null);
+    setPageData(null);
 
     try {
-      // 使用原有的 API（notion-client）来获取 recordMap
+      // 使用 API 来获取页面内容
       const response = await fetch(`/api/notion/page/${pageId}`);
       const result = await response.json();
 
       if (result.success) {
-        setRecordMap(result.recordMap);
+        if (result.type === 'official') {
+          // 官方 API 返回 page + blocks
+          setPageData({ page: result.page, blocks: result.blocks });
+        } else {
+          // 非官方 API 返回 recordMap (react-notion-x 格式)
+          setRecordMap(result.recordMap);
+        }
       } else {
-        setError(result.error || '加载页面内容失败');
+        setError(result.message || result.error || '加载页面内容失败');
       }
     } catch (err) {
       console.error('Error loading page content:', err);
@@ -385,6 +576,30 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
                 darkMode={false}
                 disableHeader={false}
               />
+            </div>
+          ) : pageData ? (
+            <div className="p-8 max-w-4xl mx-auto">
+              {/* Page Header */}
+              <div className="mb-8">
+                {pageData.page.icon?.emoji && (
+                  <span className="text-6xl mb-4 block">{pageData.page.icon.emoji}</span>
+                )}
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {pageData.page.title}
+                </h1>
+                {pageData.page.lastEditedTime && (
+                  <p className="text-sm text-gray-500">
+                    最后编辑于 {new Date(pageData.page.lastEditedTime).toLocaleString('zh-CN')}
+                  </p>
+                )}
+              </div>
+
+              {/* Blocks */}
+              <div className="space-y-4">
+                {pageData.blocks.map((block: any) => (
+                  <BlockRenderer key={block.id} block={block} />
+                ))}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">

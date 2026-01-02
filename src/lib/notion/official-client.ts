@@ -133,6 +133,8 @@ export async function getPageBlocks(pageId: string) {
 
 /**
  * 获取数据库
+ * 注意：Notion API 的 search 不再支持 filter.value='database'
+ * 改用不带 filter 的 search，然后在客户端过滤
  */
 export async function getDatabases() {
   if (!notion) {
@@ -140,19 +142,20 @@ export async function getDatabases() {
   }
 
   try {
-    const response = await notion.search({
-      filter: {
-        property: 'object',
-        value: 'database',
-      },
-    });
+    // 使用不带 filter 的 search，获取所有对象
+    const response = await notion.search({});
 
-    return response.results.map((db: any) => ({
-      id: db.id,
-      title: getDatabaseTitle(db),
-      icon: db.icon,
-      url: db.url,
-    }));
+    // 在客户端过滤出数据库类型
+    const databases = response.results
+      .filter((item: any) => item.object === 'database')
+      .map((db: any) => ({
+        id: db.id,
+        title: getDatabaseTitle(db),
+        icon: db.icon,
+        url: db.url,
+      }));
+
+    return databases;
   } catch (error) {
     console.error('Error fetching databases:', error);
     throw error;
