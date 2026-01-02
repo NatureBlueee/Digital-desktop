@@ -122,7 +122,7 @@ export default function WindowManager() {
                 bottomRight: 'window-resize-handle window-resize-corner',
                 bottomLeft: 'window-resize-handle window-resize-corner',
             }}
-            style={{ zIndex: window.zIndex }}
+            style={{ zIndex: window.zIndex, pointerEvents: 'auto' }}
             onMouseDown={() => focusWindow(window.id)}
           >
             <WindowFrame
