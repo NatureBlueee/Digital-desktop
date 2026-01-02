@@ -1,8 +1,0 @@
-{
-  "light": {
-    "background": "#ffffff",
-    "text": "hsl(205deg, 20%, 32%)",
-    "primary": "#fff"
-  },
-  "dark": {}
-}
