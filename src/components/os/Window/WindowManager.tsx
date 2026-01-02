@@ -7,7 +7,7 @@ import WindowFrame from "./WindowFrame";
 import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
 import { CursorApp, AntigravityApp } from "@/components/apps/AIIDE";
-import { NotionApp } from "@/components/apps/Notion";
+import { NotionAppImproved } from "@/components/apps/Notion";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -143,7 +143,7 @@ export default function WindowManager() {
               ) : window.appId === 'antigravity' ? (
                 <AntigravityApp windowId={window.id} />
               ) : window.appId === 'notion' ? (
-                <NotionApp windowId={window.id} />
+                <NotionAppImproved windowId={window.id} />
               ) : (
                 <div className="p-4">
                     <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>
