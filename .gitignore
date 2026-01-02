@@ -31,3 +31,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temporary/development files
+Clean-temp/
+*.asar
+extraction-results/
