@@ -60,20 +60,20 @@ function SortableApp({ app, isActive, isOpen, onClick }: SortableAppProps) {
     return (
       <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
         <button
-            onClick={onClick}
-            className={cn(
-                "h-10 flex items-center justify-center rounded-md transition-all relative group px-1",
-                isActive ? "bg-white/60 shadow-sm" : "hover:bg-white/40"
-            )}
-            title={app.title}
+          onClick={onClick}
+          className={cn(
+            "h-10 flex items-center justify-center rounded-md transition-all relative group px-1",
+            isActive ? "bg-white/60 shadow-sm" : "hover:bg-white/40"
+          )}
+          title={app.title}
         >
-            <FileExplorerIcon className={cn("transition-transform duration-200", isActive ? "scale-100" : "group-hover:scale-110")} />
-            {isOpen && (
-                <div className={cn(
-                    "absolute bottom-0.5 w-1.5 h-1 rounded-full transition-all duration-300",
-                    isActive ? "w-4 bg-[#005FB8] h-[3px]" : "bg-gray-400 group-hover:bg-gray-500"
-                )} />
-            )}
+          <FileExplorerIcon className={cn("transition-transform duration-200", isActive ? "scale-100" : "group-hover:scale-110")} />
+          {isOpen && (
+            <div className={cn(
+              "absolute bottom-0.5 w-1.5 h-1 rounded-full transition-all duration-300",
+              isActive ? "w-4 bg-[#005FB8] h-[3px]" : "bg-gray-400 group-hover:bg-gray-500"
+            )} />
+          )}
         </button>
       </div>
     );
@@ -84,36 +84,36 @@ function SortableApp({ app, isActive, isOpen, onClick }: SortableAppProps) {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-        <button
-            onClick={onClick}
-            className={cn(
-                "h-[30px] w-[30px] flex items-center justify-center rounded-md transition-all relative group",
-                isActive ? "bg-white/60 shadow-sm" : "hover:bg-white/40"
-            )}
-            title={app.title}
-        >
-            {app.id === 'widgets' ? (
-                 <WeatherIcon className="w-[28px] h-[28px] opacity-80 group-hover:scale-105 transition-transform" />
-            ) : isUrl ? (
-                <img src={app.icon} alt={app.title} className={cn(
-                    "w-[24px] h-[24px] object-contain transition-transform duration-200",
-                    isActive ? "scale-100" : "group-hover:scale-110"
-                )} />
-            ) : (
-                Icon && <Icon size={24} strokeWidth={1.5} className={cn(
-                    "transition-transform duration-200",
-                    isActive ? "text-blue-600" : "text-gray-700 group-hover:scale-110"
-                )} />
-            )}
-            
-            {/* Active Indicator Line */}
-            {isOpen && (
-                <div className={cn(
-                    "absolute bottom-0.5 w-1.5 h-1 rounded-full transition-all duration-300",
-                    isActive ? "w-4 bg-[#005FB8] h-[3px]" : "bg-gray-400 group-hover:bg-gray-500"
-                )} />
-            )}
-        </button>
+      <button
+        onClick={onClick}
+        className={cn(
+          "h-[30px] w-[30px] flex items-center justify-center rounded-md transition-all relative group",
+          isActive ? "bg-white/60 shadow-sm" : "hover:bg-white/40"
+        )}
+        title={app.title}
+      >
+        {app.id === 'widgets' ? (
+          <WeatherIcon className="w-[28px] h-[28px] opacity-80 group-hover:scale-105 transition-transform" />
+        ) : isUrl ? (
+          <img src={app.icon} alt={app.title} className={cn(
+            "w-[24px] h-[24px] object-contain transition-transform duration-200",
+            isActive ? "scale-100" : "group-hover:scale-110"
+          )} />
+        ) : (
+          Icon && <Icon size={24} strokeWidth={1.5} className={cn(
+            "transition-transform duration-200",
+            isActive ? "text-blue-600" : "text-gray-700 group-hover:scale-110"
+          )} />
+        )}
+
+        {/* Active Indicator Line */}
+        {isOpen && (
+          <div className={cn(
+            "absolute bottom-0.5 w-1.5 h-1 rounded-full transition-all duration-300",
+            isActive ? "w-4 bg-[#005FB8] h-[3px]" : "bg-gray-400 group-hover:bg-gray-500"
+          )} />
+        )}
+      </button>
     </div>
   );
 }
@@ -129,9 +129,9 @@ export default function Taskbar() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-        activationConstraint: {
-            distance: 5,
-        },
+      activationConstraint: {
+        distance: 5,
+      },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -150,14 +150,14 @@ export default function Taskbar() {
 
   const handleAppClick = (appId: string) => {
     if (appId === 'start') {
-        // Toggle start menu (future)
-        return;
+      // Toggle start menu (future)
+      return;
     }
     if (appId === 'search') {
-        return;
+      return;
     }
     if (appId === 'widgets') {
-        return;
+      return;
     }
 
     const appWindows = windows.filter(w => w.appId === appId);
@@ -182,48 +182,49 @@ export default function Taskbar() {
 
   return (
     <div className="absolute bottom-0 w-full h-[48px] bg-[#e1ebff]/90 backdrop-blur-[35px] flex items-center justify-between px-4 z-50 select-none border-t border-white/40 font-[Segoe_UI] antialiased">
-      
+
       {/* Left: Start, Search, Widgets, Apps (Left Aligned) */}
       <div className="flex items-center gap-[21px] h-full pl-2">
         {/* Fixed Start Button */}
-        <button 
-            className="h-[30px] w-[30px] flex items-center justify-center rounded-md hover:bg-white/50 transition-colors group relative"
-            title="Start"
-            onClick={() => handleAppClick('start')}
+        <button
+          className="h-[30px] w-[30px] flex items-center justify-center rounded-md hover:bg-white/50 transition-colors group relative"
+          title="Start"
+          onClick={() => handleAppClick('start')}
         >
-            <StartIcon className="transition-transform group-hover:scale-105" />
+          <StartIcon className="transition-transform group-hover:scale-105" />
         </button>
 
         {/* Fixed Search Bar */}
         <div className="h-[30px] w-[30px] flex items-center justify-center rounded-md hover:bg-white/50 transition-colors cursor-pointer group" onClick={() => handleAppClick('search')}>
-             <SearchIcon className="opacity-80 group-hover:scale-105 transition-transform" />
+          <SearchIcon className="opacity-80 group-hover:scale-105 transition-transform" />
         </div>
 
         {/* Sortable Apps */}
-        <DndContext 
-            sensors={sensors} 
-            collisionDetection={closestCenter} 
-            onDragEnd={handleDragEnd}
+        <DndContext
+          id="taskbar-context"
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-            <SortableContext 
-                items={sortableApps.map(app => app.id)} 
-                strategy={horizontalListSortingStrategy}
-            >
-                {sortableApps.map((app) => {
-                    const isOpen = windows.some(w => w.appId === app.id);
-                    const isActive = windows.some(w => w.appId === app.id && w.id === activeWindowId);
-                    
-                    return (
-                        <SortableApp 
-                            key={app.id} 
-                            app={app} 
-                            isActive={isActive} 
-                            isOpen={isOpen} 
-                            onClick={() => handleAppClick(app.id)} 
-                        />
-                    );
-                })}
-            </SortableContext>
+          <SortableContext
+            items={sortableApps.map(app => app.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {sortableApps.map((app) => {
+              const isOpen = windows.some(w => w.appId === app.id);
+              const isActive = windows.some(w => w.appId === app.id && w.id === activeWindowId);
+
+              return (
+                <SortableApp
+                  key={app.id}
+                  app={app}
+                  isActive={isActive}
+                  isOpen={isOpen}
+                  onClick={() => handleAppClick(app.id)}
+                />
+              );
+            })}
+          </SortableContext>
         </DndContext>
       </div>
 
@@ -231,20 +232,20 @@ export default function Taskbar() {
       <div className="flex items-center gap-[10px] h-full px-2">
         {/* Chevron */}
         <div className="flex items-center justify-center h-8 w-8 hover:bg-white/50 rounded-md cursor-default transition-colors">
-            <ChevronUp size={20} className="text-gray-600" />
+          <ChevronUp size={20} className="text-gray-600" />
         </div>
 
         {/* Network/Volume/Battery Group */}
         <div className="flex items-center gap-[10px] px-2 h-8 hover:bg-white/50 rounded-md cursor-default transition-colors">
-            <WifiIcon />
-            <VolumeIcon />
-            <BatteryIcon className="scale-90" />
+          <WifiIcon />
+          <VolumeIcon />
+          <BatteryIcon className="scale-90" />
         </div>
 
         {/* Time & Date */}
         <div className="flex flex-col items-end justify-center h-[32px] w-[64px] hover:bg-white/50 rounded-md cursor-default transition-colors" style={{ fontFamily: '"Open Sans", sans-serif' }}>
-            <span className="text-[12px] text-black font-normal leading-[16px] text-right">{format(currentTime, 'HH:mm')}</span>
-            <span className="text-[12px] text-black font-normal leading-[16px] text-right">{format(currentTime, 'yyyy/MM/dd')}</span>
+          <span className="text-[12px] text-black font-normal leading-[16px] text-right">{format(currentTime, 'HH:mm')}</span>
+          <span className="text-[12px] text-black font-normal leading-[16px] text-right">{format(currentTime, 'yyyy/MM/dd')}</span>
         </div>
 
         {/* Show Desktop Line */}

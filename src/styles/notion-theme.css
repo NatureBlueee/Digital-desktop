@@ -1,0 +1,186 @@
+/**
+ * Notion Theme Overrides
+ * 
+ * 这个文件覆盖 react-notion-x 的默认样式
+ * 并确保 Collection (database views) 正确渲染
+ */
+
+/* 确保 notion 容器正确显示 */
+.notion-frame {
+  --notion-font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+/* 全页面样式 */
+.notion-full-page {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.notion-full-page .notion-page {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+/* Collection/Database 视图样式 */
+.notion-collection-header {
+  padding: 12px 0;
+}
+
+.notion-collection-view-type {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.notion-board {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 16px 0;
+}
+
+.notion-board-group {
+  min-width: 280px;
+  background: rgb(247, 246, 243);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.notion-board-group-header {
+  padding: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* 卡片样式 */
+.notion-collection-card {
+  background: white;
+  border-radius: 6px;
+  box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px;
+  margin-bottom: 8px;
+  padding: 10px;
+}
+
+.notion-collection-card:hover {
+  background: rgb(250, 250, 248);
+}
+
+/* 封面图 */
+.notion-page-cover-wrapper {
+  width: 100%;
+}
+
+.notion-page-cover {
+  width: 100%;
+  height: 30vh;
+  min-height: 200px;
+  object-fit: cover;
+}
+
+/* 页面标题 */
+.notion-title {
+  font-size: 2.5em;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 0.2em 0;
+}
+
+/* linked database */
+.notion-collection-view-type-linked-db {
+  display: block;
+}
+
+/* 确保 table 视图正确显示 */
+.notion-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.notion-table-header {
+  background: rgb(247, 246, 243);
+  font-weight: 500;
+}
+
+.notion-table-row {
+  border-bottom: 1px solid rgb(233, 233, 231);
+}
+
+/* 代码块样式 */
+.notion-code {
+  font-family: SFMono-Regular, Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
+  font-size: 85%;
+  background: rgb(247, 246, 243);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+/* Gallery 视图 */
+.notion-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.notion-gallery-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px;
+}
+
+/* List 视图 */
+.notion-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notion-list-item {
+  padding: 8px 0;
+  border-bottom: 1px solid rgb(233, 233, 231);
+}
+
+/* Calendar 视图 */
+.notion-calendar {
+  width: 100%;
+}
+
+/* 属性标签颜色 */
+.notion-property-select-item,
+.notion-property-multi_select-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: 14px;
+  line-height: 20px;
+  margin: 2px;
+}
+
+/* 优先级颜色 */
+.notion-property-select-item[style*="background: rgb(255, 226, 221)"],
+.notion-red_background {
+  background: rgb(255, 226, 221) !important;
+  color: rgb(93, 23, 21) !important;
+}
+
+.notion-property-select-item[style*="background: rgb(253, 236, 200)"],
+.notion-yellow_background {
+  background: rgb(253, 236, 200) !important;
+  color: rgb(64, 44, 27) !important;
+}
+
+.notion-property-select-item[style*="background: rgb(219, 237, 219)"],
+.notion-green_background {
+  background: rgb(219, 237, 219) !important;
+  color: rgb(28, 56, 41) !important;
+}
+
+.notion-property-select-item[style*="background: rgb(211, 229, 239)"],
+.notion-blue_background {
+  background: rgb(211, 229, 239) !important;
+  color: rgb(24, 51, 71) !important;
+}

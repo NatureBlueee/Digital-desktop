@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  code-server:
+    image: codercom/code-server:latest
+    container_name: showcase-ide
+    restart: unless-stopped
+    ports:
+      - "3001:8080"
+    volumes:
+      # 挂载展示目录 (只读)
+      - ./showcase-repo:/home/coder/project:ro
+      # 挂载自定义扩展 (可读写，扩展需要)
+      - ./showcase-repo/.vscode/extensions/showcase-readonly:/home/coder/.local/share/code-server/extensions/showcase-readonly
+    environment:
+      - DOCKER_USER=coder
+    command: >
+      --auth none  --bind-addr 0.0.0.0:8080  /home/coder/project
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
