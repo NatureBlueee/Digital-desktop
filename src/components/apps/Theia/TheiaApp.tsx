@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDesktopStore } from '@/lib/store/desktopStore';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, MessageSquare } from 'lucide-react';
+import { ContributeButton } from './ContributeButton';
+import { AuthModal } from './AuthModal';
 
 interface TheiaAppProps {
     windowId: string;
@@ -13,6 +15,7 @@ export function TheiaApp({ windowId, appType = 'cursor' }: TheiaAppProps) {
     const { closeWindow, minimizeWindow, maximizeWindow } = useDesktopStore();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     // code-server URL - configured via environment variable for production
     // Production: VPS at 165.22.62.244:3001
@@ -58,13 +61,23 @@ export function TheiaApp({ windowId, appType = 'cursor' }: TheiaAppProps) {
                 <div className="flex-1 text-center text-[#cccccc] text-sm font-medium">
                     {appType === 'cursor' ? 'Cursor' : 'Antigravity'}
                 </div>
-                <button
-                    onClick={handleRefresh}
-                    className="p-1 hover:bg-[#444444] rounded transition-colors"
-                    title="Refresh"
-                >
-                    <RefreshCw size={14} className="text-[#9b9a97]" />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowAuthModal(true)}
+                        className="p-1 hover:bg-[#444444] rounded transition-colors"
+                        title="Contribute / Leave Message"
+                    >
+                        <MessageSquare size={14} className="text-[#9b9a97]" />
+                    </button>
+                    <ContributeButton variant="minimal" />
+                    <button
+                        onClick={handleRefresh}
+                        className="p-1 hover:bg-[#444444] rounded transition-colors"
+                        title="Refresh"
+                    >
+                        <RefreshCw size={14} className="text-[#9b9a97]" />
+                    </button>
+                </div>
             </div>
 
             {/* Theia iframe */}
@@ -106,6 +119,12 @@ export function TheiaApp({ windowId, appType = 'cursor' }: TheiaAppProps) {
                     title={appType === 'cursor' ? 'Cursor IDE' : 'Antigravity IDE'}
                 />
             </div>
+
+            {/* GitHub Contribution Modal */}
+            <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+            />
         </div>
     );
 }
