@@ -1,0 +1,25 @@
+{
+    "name": "showcase-readonly",
+    "displayName": "Showcase Read-Only Mode",
+    "description": "Intercepts save operations and shows friendly message for read-only showcase",
+    "version": "1.0.0",
+    "publisher": "digital-desktop",
+    "engines": {
+        "vscode": "^1.60.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "showcase.showContributeMessage",
+                "title": "How to Contribute"
+            }
+        ]
+    }
+}

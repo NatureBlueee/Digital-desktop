@@ -1,0 +1,17 @@
+FROM codercom/code-server:latest
+
+# 切换到 root 用户来设置权限
+USER root
+
+# 创建扩展目录并设置正确权限
+RUN mkdir -p /home/coder/.local/share/code-server/extensions && \
+    chown -R coder:coder /home/coder/.local
+
+# 复制自定义扩展到容器内
+COPY --chown=coder:coder local-extensions/showcase-readonly /home/coder/.local/share/code-server/extensions/showcase-readonly
+
+# 切换回 coder 用户
+USER coder
+
+# 暴露端口
+EXPOSE 8080
