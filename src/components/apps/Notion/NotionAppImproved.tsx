@@ -29,17 +29,217 @@ import {
   Loader2,
 } from 'lucide-react';
 
-// 动态导入 NotionRenderer
+// 动态导入 NotionRenderer 和相关组件
 const NotionRenderer = dynamic(
   () => import('react-notion-x').then((m) => m.NotionRenderer),
   { ssr: false }
 );
 
+// 动态导入 Collection 组件（用于渲染数据库视图）
+const Collection = dynamic(
+  () => import('react-notion-x/build/third-party/collection').then((m) => m.Collection),
+  { ssr: false }
+);
+
+// 动态导入 Code 组件（用于渲染代码块）
+const Code = dynamic(
+  () => import('react-notion-x/build/third-party/code').then((m) => m.Code),
+  { ssr: false }
+);
+
+// 动态导入 Modal 组件（用于弹窗）
+const Modal = dynamic(
+  () => import('react-notion-x/build/third-party/modal').then((m) => m.Modal),
+  { ssr: false, loading: () => null }
+);
+
 import 'react-notion-x/src/styles.css';
+// Prism.js 语法高亮样式
+import 'prismjs/themes/prism-tomorrow.css';
+// Notion 主题覆盖样式
+import '@/styles/notion-theme.css';
+// 错误边界
+import { NotionErrorBoundary } from './NotionErrorBoundary';
 
 // ============================================================
 // Types
 // ============================================================
+
+/**
+ * 修复 notion-client 返回的数据中可能导致 react-notion-x 崩溃的问题对象
+ *
+ * 问题根源：Notion API 返回的 select/multi_select 值可能是 {type, option} 格式的对象，
+ * 但 react-notion-x 的 getCollectionGroups 函数期望的是字符串值。
+ *
+ * 参考：node_modules/react-notion-x/build/third-party/collection.js 第 5640 行
+ */
+const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
+  if (!recordMap?.block) return recordMap;
+
+  let fixCount = 0; // 记录修复次数
+
+  try {
+    /**
+     * 提取对象的实际值
+     * 处理 {type, option}, {value}, {option} 等多种格式
+     */
+    const extractValue = (obj: any): string => {
+      if (obj == null) return '';
+      if (typeof obj === 'string') return obj;
+      if (typeof obj === 'number') return String(obj);
+      if (typeof obj === 'boolean') return obj ? 'Yes' : 'No';
+
+      // 处理 {type, option} 格式
+      if (obj.option) {
+        return obj.option.value || obj.option.name || obj.option.id || String(obj.option);
+      }
+      // 处理 {value} 格式
+      if (obj.value !== undefined) {
+        return typeof obj.value === 'string' ? obj.value : extractValue(obj.value);
+      }
+      // 处理 {name} 格式
+      if (obj.name) {
+        return obj.name;
+      }
+      // 处理 {id} 格式
+      if (obj.id && typeof obj.id === 'string') {
+        return obj.id;
+      }
+
+      return '';
+    };
+
+    /**
+     * 深度修复函数 - 递归处理嵌套对象
+     */
+    const deepFixValue = (value: any, path: string = ''): any => {
+      if (value == null) return value;
+
+      // 处理数组
+      if (Array.isArray(value)) {
+        return value.map((item, i) => {
+          if (item && typeof item === 'object' && !Array.isArray(item)) {
+            // 检查是否是需要修复的问题对象
+            if ('type' in item && 'option' in item) {
+              const extracted = extractValue(item);
+              fixCount++;
+              console.log(`[修复 ${fixCount}] ${path}[${i}]: {type, option} → "${extracted}"`);
+              return extracted;
+            }
+            if ('option' in item && Object.keys(item).length <= 2) {
+              const extracted = extractValue(item);
+              fixCount++;
+              console.log(`[修复 ${fixCount}] ${path}[${i}]: {option} → "${extracted}"`);
+              return extracted;
+            }
+          }
+          return deepFixValue(item, `${path}[${i}]`);
+        });
+      }
+
+      // 处理对象
+      if (typeof value === 'object') {
+        const fixed: any = {};
+        for (const key in value) {
+          fixed[key] = deepFixValue(value[key], `${path}.${key}`);
+        }
+        return fixed;
+      }
+
+      return value;
+    };
+
+    /**
+     * 专门修复 collection_groups 中的 value 字段
+     * 这是导致 "Objects are not valid as a React child" 错误的主要来源
+     */
+    const fixCollectionGroups = (groups: any[]): any[] => {
+      if (!Array.isArray(groups)) return groups;
+
+      return groups.map((group, index) => {
+        if (!group || typeof group !== 'object') return group;
+
+        const fixed = { ...group };
+
+        // 修复 value 字段
+        if (fixed.value && typeof fixed.value === 'object') {
+          const originalValue = fixed.value;
+
+          // value 可能是 { value: "xxx", type: "select" } 或 { type: "select", option: {...} }
+          if ('value' in originalValue && typeof originalValue.value !== 'object') {
+            // { value: "string", type: "xxx" } 格式 - 提取 value
+            fixed.value = { ...originalValue, value: String(originalValue.value) };
+          } else if ('option' in originalValue) {
+            // { type: "xxx", option: {...} } 格式 - 需要修复
+            const extracted = extractValue(originalValue);
+            fixCount++;
+            console.log(`[修复 ${fixCount}] collection_groups[${index}].value: {type, option} → "${extracted}"`);
+            fixed.value = { value: extracted, type: originalValue.type || 'select' };
+          }
+        }
+
+        return fixed;
+      });
+    };
+
+    // 1. 修复所有 block 的 properties 和 format
+    Object.values(recordMap.block).forEach((block: any) => {
+      if (block.value?.properties) {
+        block.value.properties = deepFixValue(block.value.properties, 'block.properties');
+      }
+      if (block.value?.format) {
+        block.value.format = deepFixValue(block.value.format, 'block.format');
+      }
+    });
+
+    // 2. 修复 collection 中的 schema
+    if (recordMap.collection) {
+      Object.values(recordMap.collection).forEach((collection: any) => {
+        if (collection.value?.schema) {
+          collection.value.schema = deepFixValue(collection.value.schema, 'collection.schema');
+        }
+      });
+    }
+
+    // 3. 重点修复 collection_view 中的 collection_groups！
+    if (recordMap.collection_view) {
+      Object.values(recordMap.collection_view).forEach((view: any) => {
+        if (view.value?.format) {
+          view.value.format = deepFixValue(view.value.format, 'collection_view.format');
+
+          // 特别处理 collection_groups
+          if (view.value.format.collection_groups) {
+            view.value.format.collection_groups = fixCollectionGroups(
+              view.value.format.collection_groups
+            );
+          }
+        }
+      });
+    }
+
+    // 4. 修复 collection_query 中的数据
+    if ((recordMap as any).collection_query) {
+      Object.values((recordMap as any).collection_query).forEach((query: any) => {
+        if (query && typeof query === 'object') {
+          Object.keys(query).forEach(key => {
+            if (query[key]?.value) {
+              query[key].value = deepFixValue(query[key].value, `collection_query.${key}`);
+            }
+          });
+        }
+      });
+    }
+
+    if (fixCount > 0) {
+      console.log(`✅ RecordMap 修复完成，共修复 ${fixCount} 处问题`);
+    } else {
+      console.log('ℹ️  RecordMap 无需修复');
+    }
+  } catch (error) {
+    console.warn('❌ Failed to fix recordMap:', error);
+  }
+  return recordMap;
+};
 
 interface NotionAppProps {
   windowId: string;
@@ -152,7 +352,13 @@ function BlockRenderer({ block }: { block: any }) {
     case 'callout':
       return (
         <div className="bg-gray-100 rounded-lg p-4 flex items-start gap-3">
-          {content?.icon?.emoji && <span className="text-xl">{content.icon.emoji}</span>}
+          {content?.icon?.emoji && (
+            <span className="text-xl">
+              {typeof content.icon.emoji === 'string'
+                ? content.icon.emoji
+                : content.icon.emoji?.emoji || '💡'}
+            </span>
+          )}
           <div>{renderRichText(content?.rich_text)}</div>
         </div>
       );
@@ -330,10 +536,14 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
       if (result.success) {
         if (result.type === 'official') {
           // 官方 API 返回 page + blocks
+          console.log('使用官方 API 数据');
           setPageData({ page: result.page, blocks: result.blocks });
         } else {
           // 非官方 API 返回 recordMap (react-notion-x 格式)
-          setRecordMap(result.recordMap);
+          console.log('使用非官方 API 数据，正在修复格式...');
+          const fixedRecordMap = fixRecordMap(result.recordMap);
+          console.log('RecordMap 修复完成，blocks 数量:', Object.keys(fixedRecordMap.block || {}).length);
+          setRecordMap(fixedRecordMap);
         }
       } else {
         setError(result.message || result.error || '加载页面内容失败');
@@ -352,7 +562,7 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
   );
 
   return (
-    <div className="flex flex-col h-full w-full bg-white overflow-hidden rounded-lg">
+    <div className="notion-frame flex flex-col h-full w-full bg-white overflow-hidden rounded-lg">
       {/* Title Bar */}
       <div className="flex items-center h-10 bg-white px-3 drag-handle select-none border-b border-gray-200">
         <div className="flex items-center gap-2 flex-1">
@@ -388,48 +598,15 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Page List */}
-        <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => {
-                setActiveTab('pages');
-                if (databases.length === 0) loadDatabases();
-              }}
-              className={cn(
-                "flex-1 px-3 py-2 text-sm font-medium transition-colors",
-                activeTab === 'pages'
-                  ? "bg-white text-gray-900 border-b-2 border-blue-500"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        <div className="w-64 bg-[#f7f6f3] border-r border-gray-200 flex flex-col">
+          {/* Header */}
+          <div className="p-3 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700">页面</span>
+              {pages.length > 0 && (
+                <span className="text-xs text-gray-500">({pages.length})</span>
               )}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <FileText size={14} />
-                <span>页面</span>
-                {pages.length > 0 && (
-                  <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
-                    {pages.length}
-                  </span>
-                )}
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('databases');
-                if (databases.length === 0) loadDatabases();
-              }}
-              className={cn(
-                "flex-1 px-3 py-2 text-sm font-medium transition-colors",
-                activeTab === 'databases'
-                  ? "bg-white text-gray-900 border-b-2 border-blue-500"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              )}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Database size={14} />
-                <span>数据库</span>
-              </div>
-            </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -459,61 +636,41 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
           </div>
 
           {/* Page List */}
-          <div className="flex-1 overflow-y-auto px-2">
+          <div className="flex-1 overflow-y-auto px-2 py-2">
             {isLoadingList ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 size={20} className="animate-spin text-gray-400" />
               </div>
-            ) : activeTab === 'pages' ? (
-              filteredPages.length > 0 ? (
-                <div className="space-y-1">
-                  {filteredPages.map(page => (
-                    <button
-                      key={page.id}
-                      onClick={() => loadPageContent(page.id)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors",
-                        selectedPageId === page.id
-                          ? "bg-blue-100 text-blue-900"
-                          : "hover:bg-gray-100 text-gray-700"
-                      )}
-                    >
+            ) : filteredPages.length > 0 ? (
+              <div className="space-y-0.5">
+                {filteredPages.map(page => (
+                  <button
+                    key={page.id}
+                    onClick={() => loadPageContent(page.id)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors text-sm",
+                      selectedPageId === page.id
+                        ? "bg-white/80 text-gray-900 shadow-sm"
+                        : "hover:bg-white/50 text-gray-700"
+                    )}
+                  >
+                    <span className="flex-shrink-0 w-5 text-center">
                       {page.icon?.emoji ? (
-                        <span className="text-lg">{page.icon.emoji}</span>
+                        typeof page.icon.emoji === 'string'
+                          ? page.icon.emoji
+                          : page.icon.emoji?.emoji || '📄'
                       ) : (
-                        <FileText size={16} className="text-gray-400" />
+                        <FileText size={14} className="text-gray-400" />
                       )}
-                      <span className="flex-1 text-sm truncate">{page.title}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-sm text-gray-500">
-                  {searchQuery ? '没有找到匹配的页面' : '没有页面'}
-                </div>
-              )
+                    </span>
+                    <span className="flex-1 truncate">{page.title}</span>
+                  </button>
+                ))}
+              </div>
             ) : (
-              databases.length > 0 ? (
-                <div className="space-y-1">
-                  {databases.map(db => (
-                    <div
-                      key={db.id}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
-                    >
-                      {db.icon?.emoji ? (
-                        <span className="text-lg">{db.icon.emoji}</span>
-                      ) : (
-                        <Database size={16} className="text-gray-400" />
-                      )}
-                      <span className="flex-1 text-sm truncate">{db.title}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-sm text-gray-500">
-                  没有数据库
-                </div>
-              )
+              <div className="text-center py-8 text-sm text-gray-500">
+                {searchQuery ? '没有找到匹配的页面' : '没有页面'}
+              </div>
             )}
           </div>
         </div>
@@ -569,20 +726,31 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
               </div>
             </div>
           ) : recordMap ? (
-            <div className="notion-container p-8">
-              <NotionRenderer
-                recordMap={recordMap}
-                fullPage={false}
-                darkMode={false}
-                disableHeader={false}
-              />
-            </div>
+            <NotionErrorBoundary onReset={() => loadPageContent(selectedPageId!)}>
+              <div className="notion-full-page">
+                <NotionRenderer
+                  recordMap={recordMap}
+                  fullPage={true}
+                  darkMode={false}
+                  disableHeader={false}
+                  components={{
+                    Collection,
+                    Code,
+                    Modal,
+                  }}
+                />
+              </div>
+            </NotionErrorBoundary>
           ) : pageData ? (
             <div className="p-8 max-w-4xl mx-auto">
               {/* Page Header */}
               <div className="mb-8">
                 {pageData.page.icon?.emoji && (
-                  <span className="text-6xl mb-4 block">{pageData.page.icon.emoji}</span>
+                  <span className="text-6xl mb-4 block">
+                    {typeof pageData.page.icon.emoji === 'string'
+                      ? pageData.page.icon.emoji
+                      : pageData.page.icon.emoji?.emoji || '📄'}
+                  </span>
                 )}
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   {pageData.page.title}

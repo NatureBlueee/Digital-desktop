@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "code-server": "code-server --bind-addr 0.0.0.0:3001 --auth none .",
     "parse-project": "npx ts-node scripts/parse-project.ts",
     "upload-project": "npx ts-node scripts/upload-project.ts"
   },
@@ -14,6 +15,7 @@
     "@babel/runtime": "^7.28.4",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@monaco-editor/react": "^4.7.0",
     "@notionhq/client": "^5.6.0",
     "@supabase/supabase-js": "^2.86.0",
     "class-variance-authority": "^0.7.1",
@@ -21,6 +23,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.555.0",
+    "monaco-editor": "^0.55.1",
     "next": "latest",
     "notion-client": "^7.7.3",
     "react": "latest",
@@ -30,6 +33,7 @@
     "react-notion-x": "^7.7.3",
     "react-rnd": "^10.5.2",
     "remark-gfm": "^4.0.1",
+    "swr": "^2.3.8",
     "tailwind-merge": "^3.4.0",
     "zustand": "^5.0.9"
   },

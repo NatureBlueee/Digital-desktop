@@ -1,0 +1,15 @@
+# 排除敏感文件和不需要的目录
+.env
+.env.local
+.env.production
+.env*.local
+node_modules/
+.next/
+.git/
+.agent/
+.claude/
+showcase/
+showcase-data/
+*.log
+*.pem
+*.key
