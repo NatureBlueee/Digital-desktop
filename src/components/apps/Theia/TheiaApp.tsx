@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDesktopStore } from '@/lib/store/desktopStore';
-import { Loader2, RefreshCw, MessageSquare } from 'lucide-react';
+import { RefreshCw, MessageSquare } from 'lucide-react';
 import { ContributeButton } from './ContributeButton';
 import { AuthModal } from './AuthModal';
+import { TheiaLoadingSkeleton } from './TheiaLoadingSkeleton';
 
 interface TheiaAppProps {
     windowId: string;
@@ -83,12 +84,8 @@ export function TheiaApp({ windowId, appType = 'cursor' }: TheiaAppProps) {
             {/* Theia iframe */}
             <div className="flex-1 relative">
                 {isLoading && (
-                    <div className="absolute inset-0 bg-[#1e1e1e] flex items-center justify-center z-10">
-                        <div className="text-center">
-                            <Loader2 size={32} className="animate-spin text-blue-400 mx-auto mb-4" />
-                            <p className="text-[#cccccc] text-sm">Loading Theia IDE...</p>
-                            <p className="text-[#666666] text-xs mt-2">Make sure Theia is running on port 3001</p>
-                        </div>
+                    <div className="absolute inset-0 z-10">
+                        <TheiaLoadingSkeleton />
                     </div>
                 )}
 
