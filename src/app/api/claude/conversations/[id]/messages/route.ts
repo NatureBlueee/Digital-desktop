@@ -4,8 +4,8 @@ import {
   getConversationMessages,
   getAllConversationMessages,
 } from '@/lib/supabase/claude-database';
-import { getMockMessages } from '@/lib/mock/claude-data';
 import { ApiResponse } from '@/types';
+import { isPublicShowcaseContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/claude/conversations/[id]/messages
@@ -23,17 +23,8 @@ export async function GET(
     const limit = searchParams.get('limit');
     const direction = searchParams.get('direction') as 'forward' | 'backward' | null;
 
-    // Use mock data if Supabase is not configured
-    if (!isSupabaseConfigured) {
-      const messages = getMockMessages(id);
-      return NextResponse.json<ApiResponse>({
-        success: true,
-        data: {
-          data: messages,
-          next_cursor: null,
-          has_more: false,
-        },
-      });
+    if (!isSupabaseConfigured || !isPublicShowcaseContent('claude', id)) {
+      return NextResponse.json<ApiResponse>({ success: false, error: 'Conversation not found or not published' }, { status: 404 });
     }
 
     if (all) {

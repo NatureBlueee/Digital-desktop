@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { ApiResponse } from '@/types';
+import { filterPublicShowcaseContent, hasPublishedContent } from '@/lib/showcase/content-policy';
 
 // Import real database functions
 import * as db from '@/lib/supabase/claude-database';
-// Import mock data functions
-import * as mock from '@/lib/mock/claude-data';
 
 /**
  * GET /api/claude/conversations
@@ -21,29 +20,8 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get('cursor') || undefined;
     const limit = searchParams.get('limit');
 
-    // Use mock data if Supabase is not configured
-    if (!isSupabaseConfigured) {
-      if (starred === 'true' && !cursor) {
-        return NextResponse.json<ApiResponse>({
-          success: true,
-          data: {
-            data: mock.getMockStarredConversations(),
-            next_cursor: null,
-            has_more: false,
-          },
-        });
-      }
-
-      const result = mock.getMockConversations({
-        starred: starred === 'true' ? true : undefined,
-        tag,
-        limit: limit ? parseInt(limit, 10) : undefined,
-      });
-
-      return NextResponse.json<ApiResponse>({
-        success: true,
-        data: result,
-      });
+    if (!isSupabaseConfigured || !hasPublishedContent('claude')) {
+      return NextResponse.json<ApiResponse>({ success: true, data: { data: [], next_cursor: null, has_more: false } });
     }
 
     // Use real database
@@ -54,7 +32,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json<ApiResponse>({
         success: true,
         data: {
-          data: starredConversations,
+          data: filterPublicShowcaseContent('claude', starredConversations),
           next_cursor: null,
           has_more: false,
         },
@@ -72,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json<ApiResponse>({
       success: true,
-      data: result,
+      data: { ...result, data: filterPublicShowcaseContent('claude', result.data) },
     });
   } catch (error) {
     console.error('List Claude conversations error:', error);

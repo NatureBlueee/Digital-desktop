@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { getAllTags } from '@/lib/supabase/chatgpt-database';
-import { getMockTags } from '@/lib/mock/chatgpt-data';
+import { getPublicConversations } from '@/lib/supabase/chatgpt-database';
 import { ApiResponse } from '@/types/chatgpt-archive';
+import { filterPublicShowcaseContent, hasPublishedContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/chatgpt/tags
@@ -10,10 +10,9 @@ import { ApiResponse } from '@/types/chatgpt-archive';
  */
 export async function GET() {
   try {
-    // Use mock data if Supabase is not configured
-    const tags = isSupabaseConfigured
-      ? await getAllTags()
-      : getMockTags();
+    const tags = !isSupabaseConfigured || !hasPublishedContent('chatgpt')
+      ? []
+      : Array.from(new Set(filterPublicShowcaseContent('chatgpt', (await getPublicConversations({ limit: 100 })).data).flatMap((conversation) => conversation.tags))).sort();
 
     const response: ApiResponse<string[]> = {
       success: true,

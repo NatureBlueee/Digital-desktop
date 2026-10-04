@@ -7,11 +7,11 @@ import { NextResponse } from 'next/server';
 import { getPageBlocks, getPageDetails } from '@/lib/notion/official-client';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { pageId: string } }
+  _request: Request,
+  { params }: { params: Promise<{ pageId: string }> }
 ) {
   try {
-    const { pageId } = params;
+    const { pageId } = await params;
 
     // 获取页面详情和内容块
     const [pageDetails, blocks] = await Promise.all([

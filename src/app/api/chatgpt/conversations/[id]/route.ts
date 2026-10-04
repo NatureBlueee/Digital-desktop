@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getConversationById } from '@/lib/supabase/chatgpt-database';
-import { getMockConversation } from '@/lib/mock/chatgpt-data';
 import { ApiResponse, ConversationDetail } from '@/types/chatgpt-archive';
+import { isPublicShowcaseContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/chatgpt/conversations/:id
@@ -15,10 +15,9 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Use mock data if Supabase is not configured
-    const conversation = isSupabaseConfigured
+    const conversation = isSupabaseConfigured && isPublicShowcaseContent('chatgpt', id)
       ? await getConversationById(id)
-      : getMockConversation(id);
+      : null;
 
     if (!conversation) {
       const response: ApiResponse<null> = {

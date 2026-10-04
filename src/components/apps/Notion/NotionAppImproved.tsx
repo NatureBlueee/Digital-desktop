@@ -10,9 +10,11 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import type { ExtendedRecordMap } from 'notion-types';
+import type { BlockObjectResponse, PageObjectResponse, RichTextItemResponse } from '@notionhq/client';
+import type { getPageDetails } from '@/lib/notion/official-client';
 import { useDesktopStore } from '@/lib/store/desktopStore';
 import { cn } from '@/lib/utils';
 import {
@@ -83,26 +85,27 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
      * 提取对象的实际值
      * 处理 {type, option}, {value}, {option} 等多种格式
      */
-    const extractValue = (obj: any): string => {
+    const extractValue = (obj: unknown): string => {
       if (obj == null) return '';
       if (typeof obj === 'string') return obj;
       if (typeof obj === 'number') return String(obj);
       if (typeof obj === 'boolean') return obj ? 'Yes' : 'No';
 
       // 处理 {type, option} 格式
-      if (obj.option) {
-        return obj.option.value || obj.option.name || obj.option.id || String(obj.option);
+      if (typeof obj !== 'object') return '';
+      if ('option' in obj && obj.option) {
+        return extractValue(obj.option) || String(obj.option);
       }
       // 处理 {value} 格式
-      if (obj.value !== undefined) {
+      if ('value' in obj && obj.value !== undefined) {
         return typeof obj.value === 'string' ? obj.value : extractValue(obj.value);
       }
       // 处理 {name} 格式
-      if (obj.name) {
+      if ('name' in obj && typeof obj.name === 'string') {
         return obj.name;
       }
       // 处理 {id} 格式
-      if (obj.id && typeof obj.id === 'string') {
+      if ('id' in obj && typeof obj.id === 'string') {
         return obj.id;
       }
 
@@ -112,7 +115,7 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
     /**
      * 深度修复函数 - 递归处理嵌套对象
      */
-    const deepFixValue = (value: any, path: string = ''): any => {
+    const repairValue = (value: unknown, path: string = ''): unknown => {
       if (value == null) return value;
 
       // 处理数组
@@ -133,15 +136,15 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
               return extracted;
             }
           }
-          return deepFixValue(item, `${path}[${i}]`);
+          return repairValue(item, `${path}[${i}]`);
         });
       }
 
       // 处理对象
       if (typeof value === 'object') {
-        const fixed: any = {};
-        for (const key in value) {
-          fixed[key] = deepFixValue(value[key], `${path}.${key}`);
+        const fixed: Record<string, unknown> = {};
+        for (const [key, child] of Object.entries(value)) {
+          fixed[key] = repairValue(child, `${path}.${key}`);
         }
         return fixed;
       }
@@ -153,13 +156,15 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
      * 专门修复 collection_groups 中的 value 字段
      * 这是导致 "Objects are not valid as a React child" 错误的主要来源
      */
-    const fixCollectionGroups = (groups: any[]): any[] => {
+    const deepFixValue = <T,>(value: T, path: string): T => repairValue(value, path) as T;
+
+    const fixCollectionGroups = (groups: unknown[]): unknown[] => {
       if (!Array.isArray(groups)) return groups;
 
       return groups.map((group, index) => {
-        if (!group || typeof group !== 'object') return group;
+        if (!group || typeof group !== 'object' || Array.isArray(group)) return group;
 
-        const fixed = { ...group };
+        const fixed: Record<string, unknown> = { ...group };
 
         // 修复 value 字段
         if (fixed.value && typeof fixed.value === 'object') {
@@ -174,7 +179,7 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
             const extracted = extractValue(originalValue);
             fixCount++;
             console.log(`[修复 ${fixCount}] collection_groups[${index}].value: {type, option} → "${extracted}"`);
-            fixed.value = { value: extracted, type: originalValue.type || 'select' };
+            fixed.value = { value: extracted, type: 'type' in originalValue ? originalValue.type : 'select' };
           }
         }
 
@@ -183,7 +188,7 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
     };
 
     // 1. 修复所有 block 的 properties 和 format
-    Object.values(recordMap.block).forEach((block: any) => {
+    Object.values(recordMap.block).forEach((block) => {
       if (block.value?.properties) {
         block.value.properties = deepFixValue(block.value.properties, 'block.properties');
       }
@@ -194,7 +199,7 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
 
     // 2. 修复 collection 中的 schema
     if (recordMap.collection) {
-      Object.values(recordMap.collection).forEach((collection: any) => {
+      Object.values(recordMap.collection).forEach((collection) => {
         if (collection.value?.schema) {
           collection.value.schema = deepFixValue(collection.value.schema, 'collection.schema');
         }
@@ -203,27 +208,26 @@ const fixRecordMap = (recordMap: ExtendedRecordMap): ExtendedRecordMap => {
 
     // 3. 重点修复 collection_view 中的 collection_groups！
     if (recordMap.collection_view) {
-      Object.values(recordMap.collection_view).forEach((view: any) => {
+      Object.values(recordMap.collection_view).forEach((view) => {
         if (view.value?.format) {
           view.value.format = deepFixValue(view.value.format, 'collection_view.format');
 
           // 特别处理 collection_groups
-          if (view.value.format.collection_groups) {
-            view.value.format.collection_groups = fixCollectionGroups(
-              view.value.format.collection_groups
-            );
+          if ('collection_groups' in view.value.format && Array.isArray(view.value.format.collection_groups)) {
+            view.value.format.collection_groups = fixCollectionGroups(view.value.format.collection_groups) as typeof view.value.format.collection_groups;
           }
         }
       });
     }
 
     // 4. 修复 collection_query 中的数据
-    if ((recordMap as any).collection_query) {
-      Object.values((recordMap as any).collection_query).forEach((query: any) => {
+    if (recordMap.collection_query) {
+      Object.values(recordMap.collection_query).forEach((query) => {
         if (query && typeof query === 'object') {
           Object.keys(query).forEach(key => {
-            if (query[key]?.value) {
-              query[key].value = deepFixValue(query[key].value, `collection_query.${key}`);
+            const result = query[key];
+            if (result && typeof result === "object" && "value" in result) {
+              result.value = deepFixValue(result.value, `collection_query.${key}`);
             }
           });
         }
@@ -248,7 +252,7 @@ interface NotionAppProps {
 interface NotionPage {
   id: string;
   title: string;
-  icon?: any;
+  icon?: PageObjectResponse['icon'];
   lastEditedTime: string;
   url: string;
 }
@@ -256,7 +260,7 @@ interface NotionPage {
 interface NotionDatabase {
   id: string;
   title: string;
-  icon?: any;
+  icon?: PageObjectResponse['icon'];
   url: string;
 }
 
@@ -264,50 +268,47 @@ interface NotionDatabase {
 // BlockRenderer - 渲染官方 API 返回的 blocks
 // ============================================================
 
-function BlockRenderer({ block }: { block: any }) {
-  const type = block.type;
-  const content = block[type];
-
-  switch (type) {
+function BlockRenderer({ block }: { block: BlockObjectResponse }) {
+  switch (block.type) {
     case 'paragraph':
       return (
         <p className="text-gray-800 leading-relaxed">
-          {renderRichText(content?.rich_text)}
+          {renderRichText(block.paragraph?.rich_text)}
         </p>
       );
 
     case 'heading_1':
       return (
         <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-2">
-          {renderRichText(content?.rich_text)}
+          {renderRichText(block.heading_1?.rich_text)}
         </h1>
       );
 
     case 'heading_2':
       return (
         <h2 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
-          {renderRichText(content?.rich_text)}
+          {renderRichText(block.heading_2?.rich_text)}
         </h2>
       );
 
     case 'heading_3':
       return (
         <h3 className="text-lg font-medium text-gray-900 mt-3 mb-1">
-          {renderRichText(content?.rich_text)}
+          {renderRichText(block.heading_3?.rich_text)}
         </h3>
       );
 
     case 'bulleted_list_item':
       return (
         <li className="ml-4 list-disc text-gray-800">
-          {renderRichText(content?.rich_text)}
+          {renderRichText(block.bulleted_list_item?.rich_text)}
         </li>
       );
 
     case 'numbered_list_item':
       return (
         <li className="ml-4 list-decimal text-gray-800">
-          {renderRichText(content?.rich_text)}
+          {renderRichText(block.numbered_list_item?.rich_text)}
         </li>
       );
 
@@ -316,12 +317,12 @@ function BlockRenderer({ block }: { block: any }) {
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={content?.checked}
+            checked={block.to_do?.checked}
             readOnly
             className="rounded"
           />
-          <span className={content?.checked ? 'line-through text-gray-500' : 'text-gray-800'}>
-            {renderRichText(content?.rich_text)}
+          <span className={block.to_do?.checked ? 'line-through text-gray-500' : 'text-gray-800'}>
+            {renderRichText(block.to_do?.rich_text)}
           </span>
         </div>
       );
@@ -330,7 +331,7 @@ function BlockRenderer({ block }: { block: any }) {
       return (
         <details className="bg-gray-50 rounded p-2">
           <summary className="cursor-pointer font-medium">
-            {renderRichText(content?.rich_text)}
+            {renderRichText(block.toggle?.rich_text)}
           </summary>
         </details>
       );
@@ -338,28 +339,26 @@ function BlockRenderer({ block }: { block: any }) {
     case 'code':
       return (
         <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto">
-          <code>{renderRichText(content?.rich_text)}</code>
+          <code>{renderRichText(block.code?.rich_text)}</code>
         </pre>
       );
 
     case 'quote':
       return (
         <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-700">
-          {renderRichText(content?.rich_text)}
+          {renderRichText(block.quote?.rich_text)}
         </blockquote>
       );
 
     case 'callout':
       return (
         <div className="bg-gray-100 rounded-lg p-4 flex items-start gap-3">
-          {content?.icon?.emoji && (
+          {block.callout.icon?.type === 'emoji' && (
             <span className="text-xl">
-              {typeof content.icon.emoji === 'string'
-                ? content.icon.emoji
-                : content.icon.emoji?.emoji || '💡'}
+              {block.callout.icon.type === 'emoji' ? block.callout.icon.emoji : '💡'}
             </span>
           )}
-          <div>{renderRichText(content?.rich_text)}</div>
+          <div>{renderRichText(block.callout?.rich_text)}</div>
         </div>
       );
 
@@ -367,13 +366,13 @@ function BlockRenderer({ block }: { block: any }) {
       return <hr className="border-gray-200 my-4" />;
 
     case 'image':
-      const imageUrl = content?.file?.url || content?.external?.url;
+      const imageUrl = block.image.type === 'file' ? block.image.file.url : block.image.external.url;
       return imageUrl ? (
         <figure className="my-4">
           <img src={imageUrl} alt="" className="rounded-lg max-w-full" />
-          {content?.caption?.[0]?.plain_text && (
+          {block.image?.caption?.[0]?.plain_text && (
             <figcaption className="text-sm text-gray-500 mt-2 text-center">
-              {content.caption[0].plain_text}
+              {block.image.caption[0].plain_text}
             </figcaption>
           )}
         </figure>
@@ -383,7 +382,7 @@ function BlockRenderer({ block }: { block: any }) {
       return (
         <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
           <FileText size={16} className="text-gray-400" />
-          <span className="text-gray-800">{content?.title}</span>
+          <span className="text-gray-800">{block.child_page?.title}</span>
         </div>
       );
 
@@ -391,7 +390,7 @@ function BlockRenderer({ block }: { block: any }) {
       return (
         <div className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
           <Database size={16} className="text-gray-400" />
-          <span className="text-gray-800">{content?.title}</span>
+          <span className="text-gray-800">{block.child_database?.title}</span>
         </div>
       );
 
@@ -399,14 +398,14 @@ function BlockRenderer({ block }: { block: any }) {
       // 未知类型显示灰色占位符
       return (
         <div className="text-gray-400 text-sm italic">
-          [{type} block]
+          [{block.type} block]
         </div>
       );
   }
 }
 
 // 渲染富文本
-function renderRichText(richText: any[]): React.ReactNode {
+function renderRichText(richText: RichTextItemResponse[]): React.ReactNode {
   if (!richText || richText.length === 0) return null;
 
   return richText.map((text, index) => {
@@ -465,44 +464,6 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
   const [activeTab, setActiveTab] = useState<'pages' | 'databases'>('pages');
   const [isConfigured, setIsConfigured] = useState(false);
 
-  // 加载页面列表
-  useEffect(() => {
-    loadPageList();
-  }, []);
-
-  const loadPageList = async () => {
-    setIsLoadingList(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/notion/pages');
-      const result = await response.json();
-
-      if (!result.configured) {
-        setError('Notion 未配置。请在 .env.local 中设置 NOTION_API_KEY');
-        setIsConfigured(false);
-        return;
-      }
-
-      if (result.success) {
-        setPages(result.data);
-        setIsConfigured(true);
-
-        // 自动选择第一个页面
-        if (result.data.length > 0 && !selectedPageId) {
-          loadPageContent(result.data[0].id);
-        }
-      } else {
-        setError(result.error || '加载页面列表失败');
-      }
-    } catch (err) {
-      console.error('Error loading page list:', err);
-      setError('网络错误，请检查 Notion API 配置');
-    } finally {
-      setIsLoadingList(false);
-    }
-  };
-
   // 加载数据库列表
   const loadDatabases = async () => {
     try {
@@ -518,10 +479,12 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
   };
 
   // 页面内容状态 - 支持两种格式
-  const [pageData, setPageData] = useState<{ page: any; blocks: any[] } | null>(null);
+  const [pageData, setPageData] = useState<{ page: Awaited<ReturnType<typeof getPageDetails>>; blocks: BlockObjectResponse[] } | null>(null);
 
   // 加载页面内容（使用 notion-client 获取 recordMap）
-  const loadPageContent = async (pageId: string) => {
+  const selectedPageIdRef = useRef<string | null>(null);
+  const loadPageContent = useCallback(async (pageId: string) => {
+    selectedPageIdRef.current = pageId;
     setSelectedPageId(pageId);
     setIsLoadingContent(true);
     setError(null);
@@ -553,6 +516,56 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
       setError('加载页面失败');
     } finally {
       setIsLoadingContent(false);
+    }
+  }, []);
+
+  const applyPageList = useCallback((result: {
+    configured?: boolean;
+    success?: boolean;
+    data?: NotionPage[];
+    error?: string;
+  }) => {
+    if (!result.configured) {
+      setError('Notion 未配置。请在 .env.local 中设置 NOTION_API_KEY');
+      setIsConfigured(false);
+    } else if (result.success && result.data) {
+      setPages(result.data);
+      setIsConfigured(true);
+      if (result.data.length > 0 && !selectedPageIdRef.current) {
+        void loadPageContent(result.data[0].id);
+      }
+    } else {
+      setError(result.error || '加载页面列表失败');
+    }
+    setIsLoadingList(false);
+  }, [loadPageContent]);
+
+  // Subscribe to the initial network result; cancel it when the window closes.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/notion/pages', { signal: controller.signal })
+      .then(response => response.json())
+      .then(result => {
+        if (!controller.signal.aborted) applyPageList(result);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError('网络错误，请检查 Notion API 配置');
+          setIsLoadingList(false);
+        }
+      });
+    return () => controller.abort();
+  }, [applyPageList]);
+
+  const refreshPageList = async () => {
+    setIsLoadingList(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/notion/pages');
+      applyPageList(await response.json());
+    } catch {
+      setError('网络错误，请检查 Notion API 配置');
+      setIsLoadingList(false);
     }
   };
 
@@ -626,7 +639,7 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
           {/* Refresh Button */}
           <div className="px-2 pb-2">
             <button
-              onClick={loadPageList}
+              onClick={refreshPageList}
               disabled={isLoadingList}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             >
@@ -655,10 +668,8 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
                     )}
                   >
                     <span className="flex-shrink-0 w-5 text-center">
-                      {page.icon?.emoji ? (
-                        typeof page.icon.emoji === 'string'
-                          ? page.icon.emoji
-                          : page.icon.emoji?.emoji || '📄'
+                      {page.icon?.type === 'emoji' ? (
+                        page.icon.emoji
                       ) : (
                         <FileText size={14} className="text-gray-400" />
                       )}
@@ -711,7 +722,7 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
                 </h3>
                 <p className="text-sm text-gray-600">{error}</p>
                 <button
-                  onClick={loadPageList}
+                  onClick={refreshPageList}
                   className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   重试
@@ -745,11 +756,9 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
             <div className="p-8 max-w-4xl mx-auto">
               {/* Page Header */}
               <div className="mb-8">
-                {pageData.page.icon?.emoji && (
+                {pageData.page.icon?.type === 'emoji' && (
                   <span className="text-6xl mb-4 block">
-                    {typeof pageData.page.icon.emoji === 'string'
-                      ? pageData.page.icon.emoji
-                      : pageData.page.icon.emoji?.emoji || '📄'}
+                    {pageData.page.icon.emoji}
                   </span>
                 )}
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -764,7 +773,7 @@ export function NotionAppImproved({ windowId }: NotionAppProps) {
 
               {/* Blocks */}
               <div className="space-y-4">
-                {pageData.blocks.map((block: any) => (
+                {pageData.blocks.map((block) => (
                   <BlockRenderer key={block.id} block={block} />
                 ))}
               </div>

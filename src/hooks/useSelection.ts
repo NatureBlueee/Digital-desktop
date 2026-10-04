@@ -9,13 +9,13 @@ interface SelectionBox {
   height: number;
 }
 
-export function useSelection(containerRef: React.RefObject<HTMLElement>) {
+export function useSelection(containerRef: React.RefObject<HTMLElement | null>) {
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.target !== containerRef.current) return;
+      if (!containerRef.current || e.target !== containerRef.current) return;
       
       // Only left click
       if (e.button !== 0) return;

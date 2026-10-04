@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getArtifactById } from '@/lib/supabase/claude-database';
 import { ApiResponse } from '@/types';
+import { isPublicShowcaseContent } from '@/lib/showcase/content-policy';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 
 /**
  * GET /api/claude/artifacts/[id]
@@ -12,9 +14,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    if (!isSupabaseConfigured) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'Artifact not found' },
+        { status: 404 }
+      );
+    }
     const artifact = await getArtifactById(id);
 
-    if (!artifact) {
+    if (!artifact || !artifact.conversation_id || !isPublicShowcaseContent('claude', artifact.conversation_id)) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: 'Artifact not found' },
         { status: 404 }

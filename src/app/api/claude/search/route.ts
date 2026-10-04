@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchMessages } from '@/lib/supabase/claude-database';
 import { ApiResponse } from '@/types';
+import { hasPublishedContent, isPublicShowcaseContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/claude/search
@@ -20,6 +21,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!hasPublishedContent('claude')) {
+      return NextResponse.json<ApiResponse>({ success: true, data: { data: [], next_cursor: null, has_more: false } });
+    }
+
     const result = await searchMessages({
       q: q.trim(),
       cursor: cursor ? parseInt(cursor, 10) : undefined,
@@ -28,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json<ApiResponse>({
       success: true,
-      data: result,
+      data: { ...result, data: result.data.filter((item) => isPublicShowcaseContent('claude', item.conversation_id)), next_cursor: null, has_more: false },
     });
   } catch (error) {
     console.error('Claude search error:', error);

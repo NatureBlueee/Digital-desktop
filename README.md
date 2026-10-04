@@ -79,6 +79,8 @@ npm run dev
 
 > 不需要配置任何后端，开箱即用。Supabase 和 Notion 是可选的。
 
+提交前使用 `npm run verify` 检查源码和构建，再执行 `npm run test:release` 验证构建产物。环境、浏览器安装和发布边界见 [检查与交付](docs/CI-CD.md)。
+
 ## ⚙️ 可选配置
 
 如果你想接入自己的数据：

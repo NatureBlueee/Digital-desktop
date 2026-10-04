@@ -12,9 +12,17 @@ import type { ConversationListItem } from '@/types/claude-archive';
 
 interface ClaudeAppProps {
   windowId: string;
+  embedded?: boolean;
+  onRequestClose?: () => void;
+  onRequestMinimize?: () => void;
 }
 
-export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
+export const ClaudeApp: React.FC<ClaudeAppProps> = ({
+  windowId,
+  embedded = false,
+  onRequestClose,
+  onRequestMinimize,
+}) => {
   const { closeWindow, minimizeWindow, maximizeWindow, windows } = useDesktopStore();
   const [activeView, setActiveView] = useState<'chat' | 'projects' | 'artifacts' | 'code'>('chat');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -94,9 +102,9 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
       className="flex flex-col h-full w-full bg-[#f5f4ef] text-[#333] font-sans relative overflow-hidden rounded-lg border border-gray-200/50 shadow-xl drag-handle"
     >
       {/* Custom Title Bar / Window Controls */}
-      <div className="absolute top-0 right-0 z-50 flex items-center gap-2 p-3 drag-handle">
+      {!embedded && <div className="absolute top-0 right-0 z-50 flex items-center gap-2 p-3 drag-handle">
         <button 
-          onClick={(e) => { e.stopPropagation(); minimizeWindow(windowId); }}
+          onClick={(e) => { e.stopPropagation(); onRequestMinimize ? onRequestMinimize() : minimizeWindow(windowId); }}
           className="p-1 hover:bg-gray-200/50 rounded-md text-gray-400 hover:text-gray-600 transition-colors"
         >
           <Minus size={16} />
@@ -108,12 +116,12 @@ export const ClaudeApp: React.FC<ClaudeAppProps> = ({ windowId }) => {
           <Square size={14} />
         </button>
         <button 
-          onClick={(e) => { e.stopPropagation(); closeWindow(windowId); }}
+          onClick={(e) => { e.stopPropagation(); onRequestClose ? onRequestClose() : closeWindow(windowId); }}
           className="p-1 hover:bg-red-100 rounded-md text-gray-400 hover:text-red-500 transition-colors"
         >
           <X size={16} />
         </button>
-      </div>
+      </div>}
 
       <div className="flex flex-1 overflow-hidden relative pt-0">
         <ClaudeSidebar

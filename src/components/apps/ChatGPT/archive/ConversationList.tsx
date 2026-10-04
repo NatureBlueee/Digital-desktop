@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, Calendar, Tag, ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ConversationListItem, PaginatedResponse } from '@/types/chatgpt-archive';
@@ -23,7 +23,11 @@ interface ConversationListProps {
  * - 标题搜索
  * - 无限滚动分页
  */
-export const ConversationList: React.FC<ConversationListProps> = ({
+export const ConversationList: React.FC<ConversationListProps> = (props) => (
+  <FilteredConversationList key={JSON.stringify([props.selectedTag, props.searchQuery])} {...props} />
+);
+
+const FilteredConversationList: React.FC<ConversationListProps> = ({
   onSelectConversation,
   selectedId,
   selectedTag,
@@ -35,22 +39,23 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const request = useRef<AbortController | null>(null);
 
   // Fetch conversations
   const fetchConversations = useCallback(
     async (cursor?: string, append = false) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
+      request.current?.abort();
+      const controller = new AbortController();
+      request.current = controller;
         const params = new URLSearchParams();
         if (cursor) params.set('cursor', cursor);
         if (selectedTag) params.set('tag', selectedTag);
         if (searchQuery) params.set('query', searchQuery);
         params.set('limit', '30');
 
-        const response = await fetch(`/api/chatgpt/conversations?${params}`);
-        const result = await response.json();
+        return fetch(`/api/chatgpt/conversations?${params}`, { signal: controller.signal })
+          .then((response) => response.json()).then((result) => {
+        if (controller.signal.aborted) return;
 
         if (!result.success) {
           throw new Error(result.error || 'Failed to fetch conversations');
@@ -66,23 +71,28 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
         setHasMore(data.has_more);
         setNextCursor(data.next_cursor);
-      } catch (err) {
+        setError(null);
+      }).catch((err: unknown) => {
+        if (controller.signal.aborted) return;
         setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
-      }
+      }).finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
     },
     [selectedTag, searchQuery]
   );
 
   // Initial load and reload on filter change
   useEffect(() => {
-    fetchConversations();
+    void fetchConversations();
+    return () => request.current?.abort();
   }, [fetchConversations]);
 
   // Load more handler
   const loadMore = useCallback(() => {
     if (nextCursor && !isLoading) {
+      setIsLoading(true);
+      setError(null);
       fetchConversations(nextCursor, true);
     }
   }, [nextCursor, isLoading, fetchConversations]);
@@ -92,7 +102,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       <div className={cn('flex flex-col items-center justify-center py-8 text-red-500', className)}>
         <div className="text-sm mb-2">Failed to load conversations</div>
         <button
-          onClick={() => fetchConversations()}
+          onClick={() => { setIsLoading(true); setError(null); void fetchConversations(); }}
           className="text-xs text-blue-500 hover:underline"
         >
           Retry

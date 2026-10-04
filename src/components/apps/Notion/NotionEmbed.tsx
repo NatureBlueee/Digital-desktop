@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import useSWR from 'swr';
 import { useDesktopStore } from '@/lib/store/desktopStore';
 import { cn } from '@/lib/utils';
@@ -178,9 +178,8 @@ export function NotionEmbed({ windowId }: NotionEmbedProps) {
     const { closeWindow, minimizeWindow, maximizeWindow } = useDesktopStore();
 
     // State
-    const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-    const [iframeUrl, setIframeUrl] = useState<string>('');
-    const [isLoadingPage, setIsLoadingPage] = useState(false);
+    const [requestedPageId, setSelectedPageId] = useState<string | null>(null);
+    const [loadedPageId, setLoadedPageId] = useState<string | null>(null);
     const [favoritesExpanded, setFavoritesExpanded] = useState(true);
     const [privateExpanded, setPrivateExpanded] = useState(true);
     const [notionAppsExpanded, setNotionAppsExpanded] = useState(true);
@@ -203,20 +202,15 @@ export function NotionEmbed({ windowId }: NotionEmbedProps) {
 
     const pages = data?.data || [];
 
-    // 自动选择第一个页面
-    useEffect(() => {
-        if (pages.length > 0 && !selectedPageId) {
-            selectPage(pages[0]);
-        }
-    }, [pages]);
-
+    // Default selection is derived from the fetched list, so it never needs a
+    // second render solely to synchronize state with the first page.
+    const selectedPageId = requestedPageId ?? pages[0]?.id ?? null;
+    const siteUrl = process.env.NEXT_PUBLIC_NOTION_SITE_URL || 'https://notion.site';
+    const iframeUrl = selectedPageId ? `${siteUrl}/ebd//${selectedPageId.replace(/-/g, '')}` : '';
+    const isLoadingPage = selectedPageId !== null && loadedPageId !== selectedPageId;
     const selectPage = (page: NotionPage) => {
+        if (page.id !== selectedPageId) setLoadedPageId(null);
         setSelectedPageId(page.id);
-        setIsLoadingPage(true);
-        const siteUrl = process.env.NEXT_PUBLIC_NOTION_SITE_URL || 'https://notion.site';
-        const cleanPageId = page.id.replace(/-/g, '');
-        const embedUrl = `${siteUrl}/ebd//${cleanPageId}`;
-        setIframeUrl(embedUrl);
     };
 
     const favoritePage = pages.length > 0 ? pages[0] : null;
@@ -374,7 +368,8 @@ export function NotionEmbed({ windowId }: NotionEmbedProps) {
                         <iframe
                             src={iframeUrl}
                             className="w-full h-full border-0"
-                            onLoad={() => setIsLoadingPage(false)}
+                            key={selectedPageId}
+                            onLoad={() => setLoadedPageId(selectedPageId)}
                             allow="fullscreen"
                             title="Notion Page"
                         />

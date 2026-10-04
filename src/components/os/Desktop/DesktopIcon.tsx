@@ -27,7 +27,7 @@ export default function DesktopIcon({
 
   // Check if icon is a URL (simple check)
   const isUrl = icon.icon.startsWith('http') || icon.icon.startsWith('/');
-  const IconComponent = !isUrl ? (LucideIcons as any)[icon.icon] || LucideIcons.File : null;
+  const IconComponent = !isUrl ? LucideIcons.icons[icon.icon as keyof typeof LucideIcons.icons] || LucideIcons.File : null;
 
   const style = transform
     ? {

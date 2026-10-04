@@ -12,7 +12,7 @@ export interface AppData {
   type: AppType;
   name: string;
   icon?: string;
-  content: any; // 每个应用的content结构不同
+  content: unknown; // 每个应用的content由具体接口定义
   metadata: {
     createdAt: Date;
     updatedAt: Date;
@@ -99,7 +99,7 @@ export interface FileUpload {
 /**
  * API响应接口
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -127,6 +127,6 @@ export interface ClaudeMessage {
   sender: 'human' | 'assistant';
   created_at: string;
   updated_at: string;
-  attachments?: any[];
-  files?: any[];
+  attachments?: unknown[];
+  files?: unknown[];
 }

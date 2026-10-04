@@ -23,14 +23,14 @@ export abstract class BaseAdapter<T extends AppData = AppData> {
    * @param json JSON对象
    * @returns 解析后的应用数据
    */
-  abstract parseFromJSON(json: any): T;
+  abstract parseFromJSON(json: unknown): T;
 
   /**
    * 验证数据格式是否正确
    * @param data 要验证的数据
    * @returns 是否有效
    */
-  abstract validate(data: any): boolean;
+  abstract validate(data: unknown): boolean;
 
   /**
    * 生成应用ID

@@ -5,7 +5,9 @@
  * 支持获取页面列表、数据库查询等高级功能
  */
 
-import { Client } from '@notionhq/client';
+import { Client, isFullPage, isFullBlock } from '@notionhq/client';
+import type { PageObjectResponse, QueryDataSourceParameters } from '@notionhq/client';
+import { summarizeDatabases } from './database-summary';
 
 // 创建官方 Notion 客户端
 const notionApiKey = process.env.NOTION_API_KEY;
@@ -40,7 +42,7 @@ export async function getAllPages() {
       },
     });
 
-    return response.results.map((page: any) => ({
+    return response.results.filter(isFullPage).map((page) => ({
       id: page.id,
       title: getPageTitle(page),
       icon: page.icon,
@@ -70,8 +72,9 @@ export async function getChildPages(pageId: string) {
 
     // 过滤出子页面类型的 block
     const childPages = response.results
-      .filter((block: any) => block.type === 'child_page')
-      .map((block: any) => ({
+      .filter(isFullBlock)
+      .filter((block) => block.type === 'child_page')
+      .map((block) => ({
         id: block.id,
         title: block.child_page?.title || 'Untitled',
         type: 'child_page',
@@ -94,15 +97,16 @@ export async function getPageDetails(pageId: string) {
 
   try {
     const page = await notion.pages.retrieve({ page_id: pageId });
+    if (!isFullPage(page)) throw new Error('Notion returned incomplete page details');
     return {
       id: page.id,
       title: getPageTitle(page),
-      icon: (page as any).icon,
-      cover: (page as any).cover,
-      properties: (page as any).properties,
-      lastEditedTime: (page as any).last_edited_time,
-      createdTime: (page as any).created_time,
-      url: (page as any).url,
+      icon: page.icon,
+      cover: page.cover,
+      properties: page.properties,
+      lastEditedTime: page.last_edited_time,
+      createdTime: page.created_time,
+      url: page.url,
     };
   } catch (error) {
     console.error('Error fetching page details:', error);
@@ -124,7 +128,7 @@ export async function getPageBlocks(pageId: string) {
       page_size: 100,
     });
 
-    return response.results;
+    return response.results.filter(isFullBlock);
   } catch (error) {
     console.error('Error fetching page blocks:', error);
     throw error;
@@ -145,17 +149,7 @@ export async function getDatabases() {
     // 使用不带 filter 的 search，获取所有对象
     const response = await notion.search({});
 
-    // 在客户端过滤出数据库类型
-    const databases = response.results
-      .filter((item: any) => item.object === 'database')
-      .map((db: any) => ({
-        id: db.id,
-        title: getDatabaseTitle(db),
-        icon: db.icon,
-        url: db.url,
-      }));
-
-    return databases;
+    return summarizeDatabases(response.results);
   } catch (error) {
     console.error('Error fetching databases:', error);
     throw error;
@@ -165,14 +159,20 @@ export async function getDatabases() {
 /**
  * 查询数据库
  */
-export async function queryDatabase(databaseId: string, filter?: any) {
+export async function queryDatabase(databaseId: string, filter?: QueryDataSourceParameters['filter']) {
   if (!notion) {
     throw new Error('Notion API is not configured');
   }
 
   try {
-    const response = await notion.databases.query({
-      database_id: databaseId,
+    const database = await notion.databases.retrieve({ database_id: databaseId });
+    const dataSource = 'data_sources' in database ? database.data_sources[0] : undefined;
+    if (!dataSource) {
+      throw new Error('This Notion database has no queryable data source');
+    }
+
+    const response = await notion.dataSources.query({
+      data_source_id: dataSource.id,
       filter: filter,
     });
 
@@ -190,24 +190,9 @@ export async function queryDatabase(databaseId: string, filter?: any) {
 /**
  * 从页面对象中提取标题
  */
-function getPageTitle(page: any): string {
-  if (page.properties?.title?.title?.[0]?.plain_text) {
-    return page.properties.title.title[0].plain_text;
-  }
-  if (page.properties?.Name?.title?.[0]?.plain_text) {
-    return page.properties.Name.title[0].plain_text;
-  }
-  return 'Untitled';
-}
-
-/**
- * 从数据库对象中提取标题
- */
-function getDatabaseTitle(database: any): string {
-  if (database.title?.[0]?.plain_text) {
-    return database.title[0].plain_text;
-  }
-  return 'Untitled Database';
+function getPageTitle(page: PageObjectResponse): string {
+  const title = Object.values(page.properties).find(property => property.type === 'title');
+  return title?.type === 'title' ? title.title.map(text => text.plain_text).join('') || 'Untitled' : 'Untitled';
 }
 
 export { notion };

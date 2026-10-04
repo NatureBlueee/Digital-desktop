@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   checkAuthStatus,
   logout as logoutAPI,
@@ -41,27 +41,34 @@ export function useGitHubAuth(): UseGitHubAuthReturn {
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
 
   /**
    * 刷新认证状态
    */
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const status = await checkAuthStatus();
+  const fetchStatus = useCallback(async () => {
+    const id = ++requestId.current;
+    return checkAuthStatus().then((status) => {
+      if (id !== requestId.current) return;
       setIsAuthenticated(status.authenticated);
       setUser(status.user);
-    } catch (err) {
+      setError(null);
+    }).catch((err: unknown) => {
+      if (id !== requestId.current) return;
       console.error('Failed to check auth status:', err);
       setError(err instanceof Error ? err.message : 'Failed to check auth status');
       setIsAuthenticated(false);
       setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
+    }).finally(() => {
+      if (id === requestId.current) setIsLoading(false);
+    });
   }, []);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    await fetchStatus();
+  }, [fetchStatus]);
 
   /**
    * 登录
@@ -81,8 +88,10 @@ export function useGitHubAuth(): UseGitHubAuthReturn {
   const logout = useCallback(async () => {
     try {
       await logoutAPI();
+      requestId.current += 1;
       setIsAuthenticated(false);
       setUser(null);
+      setIsLoading(false);
     } catch (err) {
       console.error('Failed to logout:', err);
       setError(err instanceof Error ? err.message : 'Failed to logout');
@@ -94,7 +103,7 @@ export function useGitHubAuth(): UseGitHubAuthReturn {
    * 初始化：检查认证状态
    */
   useEffect(() => {
-    refresh();
+    void fetchStatus();
 
     // 检查是否从 OAuth 回调返回
     const urlParams = new URLSearchParams(window.location.search);
@@ -110,7 +119,8 @@ export function useGitHubAuth(): UseGitHubAuthReturn {
         window.location.href = returnUrl;
       }
     }
-  }, [refresh]);
+    return () => { requestId.current += 1; };
+  }, [fetchStatus]);
 
   return {
     isAuthenticated,

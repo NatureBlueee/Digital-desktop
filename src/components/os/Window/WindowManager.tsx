@@ -8,6 +8,7 @@ import { ClaudeApp } from "@/components/apps/Claude/ClaudeApp";
 import { ChatGPTArchiveApp } from "@/components/apps/ChatGPT/archive";
 import { TheiaApp } from "@/components/apps/Theia";
 import { NotionEmbed } from "@/components/apps/Notion";
+import { MidjourneyApp } from "@/components/apps/Midjourney";
 
 export default function WindowManager() {
   const { windows, activeWindowId, closeWindow, minimizeWindow, maximizeWindow, focusWindow } = useDesktopStore();
@@ -135,7 +136,7 @@ export default function WindowManager() {
               onMinimize={() => minimizeWindow(window.id)}
               onMaximize={() => maximizeWindow(window.id)}
               onFocus={() => focusWindow(window.id)}
-              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'cursor' || window.appId === 'antigravity' || window.appId === 'notion'}
+              hideTitleBar={window.appId === 'claude' || window.appId === 'chatgpt' || window.appId === 'cursor' || window.appId === 'antigravity' || window.appId === 'notion' || window.appId === 'midjourney'}
             >
               {window.appId === 'claude' ? (
                 <ClaudeApp windowId={window.id} />
@@ -147,6 +148,8 @@ export default function WindowManager() {
                 <TheiaApp windowId={window.id} appType="antigravity" />
               ) : window.appId === 'notion' ? (
                 <NotionEmbed windowId={window.id} />
+              ) : window.appId === 'midjourney' ? (
+                <MidjourneyApp windowId={window.id} />
               ) : (
                 <div className="p-4">
                   <h1 className="text-xl font-bold mb-2">Welcome to {window.title}</h1>

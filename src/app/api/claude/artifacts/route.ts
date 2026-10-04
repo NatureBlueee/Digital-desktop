@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getArtifacts } from '@/lib/supabase/claude-database';
 import { ApiResponse } from '@/types';
 import type { ArtifactType } from '@/types/claude-archive';
+import { filterPublicShowcaseContent, hasPublishedContent } from '@/lib/showcase/content-policy';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 
 /**
  * GET /api/claude/artifacts
@@ -9,6 +11,13 @@ import type { ArtifactType } from '@/types/claude-archive';
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!isSupabaseConfigured || !hasPublishedContent('claude')) {
+      return NextResponse.json<ApiResponse>({
+        success: true,
+        data: { data: [], next_cursor: null, has_more: false },
+      });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type') as ArtifactType | null;
     const conversation_id = searchParams.get('conversation_id') || undefined;
@@ -22,9 +31,17 @@ export async function GET(request: NextRequest) {
       limit: limit ? parseInt(limit, 10) : undefined,
     });
 
+    const artifacts = result.data.filter(
+      (artifact) => artifact.conversation_id && filterPublicShowcaseContent('claude', [{ id: artifact.conversation_id }]).length > 0
+    );
+
     return NextResponse.json<ApiResponse>({
       success: true,
-      data: result,
+      data: {
+        data: artifacts,
+        next_cursor: null,
+        has_more: false,
+      },
     });
   } catch (error) {
     console.error('List Claude artifacts error:', error);

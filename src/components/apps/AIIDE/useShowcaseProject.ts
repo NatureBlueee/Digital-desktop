@@ -5,10 +5,9 @@
  * 如果 Supabase 未配置或加载失败，返回内置的 mock 数据
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getFullProjectData,
-  getProjects,
   type ShowcaseProject,
   type FileNode,
   type GitCommit,
@@ -278,18 +277,19 @@ function formatGitCommit(commit: GitCommit): GitCommitForDisplay {
 
 export function useShowcaseProject(initialSlug?: string): UseShowcaseProjectResult {
   const [isLoading, setIsLoading] = useState(false);
+  const [loadedInitialSlug, setLoadedInitialSlug] = useState<string | undefined>();
+  const requestId = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [project, setProject] = useState<ShowcaseProject | null>(null);
   const [fileTree, setFileTree] = useState<FileNode[]>(defaultFileTree);
   const [fileContents, setFileContents] = useState<Record<string, string>>(defaultFileContents);
   const [gitCommits, setGitCommits] = useState<GitCommitForDisplay[]>(defaultGitCommits);
 
-  const loadProject = useCallback(async (slug: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await getFullProjectData(slug);
+  const fetchProject = useCallback(async (slug: string) => {
+    const id = ++requestId.current;
+    return getFullProjectData(slug).then((data) => {
+      if (id !== requestId.current) return;
+      setError(null);
 
       if (data && data.project) {
         setProject(data.project);
@@ -303,21 +303,30 @@ export function useShowcaseProject(initialSlug?: string): UseShowcaseProjectResu
       } else {
         // 项目未找到，使用默认数据
         console.log(`Project "${slug}" not found, using default data`);
+        setProject(null);
         setFileTree(defaultFileTree);
         setFileContents(defaultFileContents);
         setGitCommits(defaultGitCommits);
       }
-    } catch (err) {
+    }).catch((err: unknown) => {
+      if (id !== requestId.current) return;
       console.error('Error loading project:', err);
       setError(err instanceof Error ? err.message : 'Failed to load project');
+      setProject(null);
       // 出错时使用默认数据
       setFileTree(defaultFileTree);
       setFileContents(defaultFileContents);
       setGitCommits(defaultGitCommits);
-    } finally {
-      setIsLoading(false);
-    }
+    }).finally(() => {
+      if (id === requestId.current) setIsLoading(false);
+    });
   }, []);
+
+  const loadProject = useCallback(async (slug: string) => {
+    setIsLoading(true);
+    setError(null);
+    await fetchProject(slug);
+  }, [fetchProject]);
 
   const getFileContent = useCallback((path: string): string | null => {
     // 尝试多种路径格式
@@ -326,13 +335,17 @@ export function useShowcaseProject(initialSlug?: string): UseShowcaseProjectResu
 
   // 初始加载
   useEffect(() => {
+    let active = true;
     if (initialSlug) {
-      loadProject(initialSlug);
+      void fetchProject(initialSlug).then(() => {
+        if (active) setLoadedInitialSlug(initialSlug);
+      });
     }
-  }, [initialSlug, loadProject]);
+    return () => { active = false; requestId.current += 1; };
+  }, [initialSlug, fetchProject]);
 
   return {
-    isLoading,
+    isLoading: isLoading || Boolean(initialSlug && initialSlug !== loadedInitialSlug),
     error,
     project,
     fileTree,

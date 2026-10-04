@@ -1,217 +1,83 @@
 import { useState, useEffect, useCallback } from 'react';
-import type {
-  ConversationListItem,
-  Conversation,
-  Message,
-  Artifact,
-  Project,
-} from '@/types/claude-archive';
+import type { ConversationListItem, Conversation, Message, Artifact, Project } from '@/types/claude-archive';
 
 const API_BASE = '/api/claude';
 
-interface UseConversationsResult {
-  conversations: ConversationListItem[];
-  starredConversations: ConversationListItem[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => void;
+interface ApiResult<T> { success: boolean; data: T }
+
+async function getData<T>(path: string, signal: AbortSignal): Promise<T> {
+  const response = await fetch(`${API_BASE}/${path}`, { signal });
+  if (!response.ok) throw new Error('Failed to fetch Claude archive');
+  const result: ApiResult<T> = await response.json();
+  if (!result.success) throw new Error('Failed to fetch Claude archive');
+  return result.data;
 }
 
-interface UseConversationResult {
-  conversation: Conversation | null;
-  messages: Message[];
-  loading: boolean;
-  error: string | null;
-}
-
-interface UseArtifactsResult {
-  artifacts: Artifact[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => void;
-}
-
-interface UseProjectsResult {
-  projects: Project[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => void;
-}
-
-/**
- * Hook for fetching conversation list (recent and starred)
- */
-export function useConversations(): UseConversationsResult {
-  const [conversations, setConversations] = useState<ConversationListItem[]>([]);
-  const [starredConversations, setStarredConversations] = useState<ConversationListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchConversations = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch recent conversations and starred in parallel
-      const [recentRes, starredRes] = await Promise.all([
-        fetch(`${API_BASE}/conversations?limit=10`),
-        fetch(`${API_BASE}/conversations?starred=true&limit=5`),
-      ]);
-
-      if (!recentRes.ok || !starredRes.ok) {
-        throw new Error('Failed to fetch conversations');
-      }
-
-      const recentData = await recentRes.json();
-      const starredData = await starredRes.json();
-
-      if (recentData.success) {
-        setConversations(recentData.data.data || []);
-      }
-      if (starredData.success) {
-        setStarredConversations(starredData.data.data || []);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+// Request identity owns loading and data, so changing selection never shows an
+// earlier conversation or lets its late response replace the current one.
+function useResource<T>(key: string | null, initial: T, load: (key: string, signal: AbortSignal) => Promise<T>) {
+  const [revision, setRevision] = useState(0);
+  const [result, setResult] = useState<{ key: string; revision: number; data: T; error: string | null } | null>(null);
   useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
-
-  return {
-    conversations,
-    starredConversations,
-    loading,
-    error,
-    refetch: fetchConversations,
-  };
+    if (key === null) return;
+    const controller = new AbortController();
+    load(key, controller.signal).then(
+      (data) => { if (!controller.signal.aborted) setResult({ key, revision, data, error: null }); },
+      (cause: unknown) => {
+        if (!controller.signal.aborted) setResult({ key, revision, data: initial, error: cause instanceof Error ? cause.message : 'Unknown error' });
+      },
+    );
+    return () => controller.abort();
+  }, [key, revision, load, initial]);
+  const refetch = useCallback(() => setRevision((value) => value + 1), []);
+  const current = key !== null && result?.key === key && result.revision === revision;
+  return { data: current ? result.data : initial, loading: key !== null && !current, error: current ? result.error : null, refetch };
 }
 
-/**
- * Hook for fetching a single conversation with messages
- */
-export function useConversation(conversationId: string | null): UseConversationResult {
-  const [conversation, setConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!conversationId) {
-      setConversation(null);
-      setMessages([]);
-      return;
-    }
-
-    const fetchConversation = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch conversation and messages in parallel
-        const [convRes, msgRes] = await Promise.all([
-          fetch(`${API_BASE}/conversations/${conversationId}`),
-          fetch(`${API_BASE}/conversations/${conversationId}/messages?all=true`),
-        ]);
-
-        if (!convRes.ok) {
-          throw new Error('Conversation not found');
-        }
-
-        const convData = await convRes.json();
-        const msgData = await msgRes.json();
-
-        if (convData.success) {
-          setConversation(convData.data);
-        }
-        if (msgData.success) {
-          setMessages(msgData.data.data || []);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConversation();
-  }, [conversationId]);
-
-  return { conversation, messages, loading, error };
+const emptyConversations: { conversations: ConversationListItem[]; starredConversations: ConversationListItem[] } = { conversations: [], starredConversations: [] };
+async function loadConversations(_key: string, signal: AbortSignal) {
+  const [recent, starred] = await Promise.all([
+    getData<{ data: ConversationListItem[] }>('conversations?limit=10', signal),
+    getData<{ data: ConversationListItem[] }>('conversations?starred=true&limit=5', signal),
+  ]);
+  return { conversations: recent.data || [], starredConversations: starred.data || [] };
 }
 
-/**
- * Hook for fetching artifacts
- */
-export function useArtifacts(): UseArtifactsResult {
-  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchArtifacts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await fetch(`${API_BASE}/artifacts?limit=20`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch artifacts');
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        setArtifacts(data.data.data || []);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchArtifacts();
-  }, [fetchArtifacts]);
-
-  return { artifacts, loading, error, refetch: fetchArtifacts };
+export function useConversations() {
+  const { data, ...state } = useResource('conversations', emptyConversations, loadConversations);
+  return { ...data, ...state };
 }
 
-/**
- * Hook for fetching projects
- */
-export function useProjects(): UseProjectsResult {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const emptyConversation: { conversation: Conversation | null; messages: Message[] } = { conversation: null, messages: [] };
+async function loadConversation(id: string, signal: AbortSignal) {
+  const [conversation, messages] = await Promise.all([
+    getData<Conversation>(`conversations/${id}`, signal),
+    getData<{ data: Message[] }>(`conversations/${id}/messages?all=true`, signal),
+  ]);
+  return { conversation, messages: messages.data || [] };
+}
 
-  const fetchProjects = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+export function useConversation(conversationId: string | null) {
+  const { data, loading, error } = useResource(conversationId, emptyConversation, loadConversation);
+  return { ...data, loading, error };
+}
 
-      const res = await fetch(`${API_BASE}/projects?limit=20`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch projects');
-      }
+const emptyArtifacts: Artifact[] = [];
+async function loadArtifacts(_key: string, signal: AbortSignal) {
+  return (await getData<{ data: Artifact[] }>('artifacts?limit=20', signal)).data || [];
+}
 
-      const data = await res.json();
-      if (data.success) {
-        setProjects(data.data.data || []);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+export function useArtifacts() {
+  const { data: artifacts, ...state } = useResource('artifacts', emptyArtifacts, loadArtifacts);
+  return { artifacts, ...state };
+}
 
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+const emptyProjects: Project[] = [];
+async function loadProjects(_key: string, signal: AbortSignal) {
+  return (await getData<{ data: Project[] }>('projects?limit=20', signal)).data || [];
+}
 
-  return { projects, loading, error, refetch: fetchProjects };
+export function useProjects() {
+  const { data: projects, ...state } = useResource('projects', emptyProjects, loadProjects);
+  return { projects, ...state };
 }

@@ -34,19 +34,12 @@ import {
   Square,
   Sparkles,
   Bot,
-  Copy,
   Check,
   FilePlus,
   FolderPlus,
   Trash2,
   Pencil,
-  RefreshCw,
-  RotateCcw,
-  Scissors,
-  Clipboard,
   MessageSquare,
-  Wand2,
-  Play,
   Layers,
   Layout,
   Code,
@@ -319,13 +312,13 @@ export const AntigravityApp: React.FC<AntigravityAppProps> = ({ windowId }) => {
         {/* View Mode Switcher */}
         <div className="flex items-center gap-1 mr-2">
           {[
-            { mode: 'editor', icon: Code, label: 'Editor' },
-            { mode: 'manager', icon: Layers, label: 'Manager' },
-            { mode: 'split', icon: Layout, label: 'Split' },
+            { mode: 'editor' as const, icon: Code, label: 'Editor' },
+            { mode: 'manager' as const, icon: Layers, label: 'Manager' },
+            { mode: 'split' as const, icon: Layout, label: 'Split' },
           ].map(item => (
             <Tooltip key={item.mode} content={item.label + ' View'}>
               <button
-                onClick={() => setViewMode(item.mode as any)}
+                onClick={() => setViewMode(item.mode)}
                 className={cn(
                   "p-1 rounded transition-colors",
                   viewMode === item.mode
@@ -344,13 +337,13 @@ export const AntigravityApp: React.FC<AntigravityAppProps> = ({ windowId }) => {
         {/* Activity Bar */}
         <div className="w-12 bg-[#0d1117] flex flex-col items-center py-1 border-r border-[#30363d]">
           {[
-            { id: 'files', icon: Files, tooltip: 'Explorer' },
-            { id: 'search', icon: Search, tooltip: 'Search' },
-            { id: 'git', icon: GitBranch, tooltip: 'Source Control' },
+            { id: 'files' as const, icon: Files, tooltip: 'Explorer' },
+            { id: 'search' as const, icon: Search, tooltip: 'Search' },
+            { id: 'git' as const, icon: GitBranch, tooltip: 'Source Control' },
           ].map(item => (
             <Tooltip key={item.id} content={item.tooltip} position="right">
               <button
-                onClick={() => setActiveSideTab(item.id as any)}
+                onClick={() => setActiveSideTab(item.id)}
                 className={cn(
                   "p-2.5 rounded mb-0.5 relative transition-colors",
                   activeSideTab === item.id

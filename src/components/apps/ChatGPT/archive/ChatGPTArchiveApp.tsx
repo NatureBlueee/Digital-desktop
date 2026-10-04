@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useDesktopStore } from '@/lib/store/desktopStore';
 import { cn } from '@/lib/utils';
-import { Minus, Square, X, PanelLeft, Search as SearchIcon } from 'lucide-react';
+import { Minus, Square, X, PanelLeft } from 'lucide-react';
 import {
   ConversationDetail,
   Message,
@@ -19,6 +19,9 @@ import { TagFilter } from './TagFilter';
 
 interface ChatGPTArchiveAppProps {
   windowId: string;
+  embedded?: boolean;
+  onRequestClose?: () => void;
+  onRequestMinimize?: () => void;
 }
 
 /**
@@ -37,13 +40,15 @@ interface ChatGPTArchiveAppProps {
  */
 export const ChatGPTArchiveApp: React.FC<ChatGPTArchiveAppProps> = ({
   windowId,
+  embedded = false,
+  onRequestClose,
+  onRequestMinimize,
 }) => {
   const { closeWindow, minimizeWindow, maximizeWindow } = useDesktopStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // UI state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [width, setWidth] = useState(1000);
 
   // Data state
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -53,10 +58,11 @@ export const ChatGPTArchiveApp: React.FC<ChatGPTArchiveAppProps> = ({
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [messagesCursor, setMessagesCursor] = useState<string | null>(null);
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  const conversationRequest = useRef<AbortController | null>(null);
 
   // Filter state
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchQuery = '';
 
   // Track window width for responsive behavior
   useEffect(() => {
@@ -64,7 +70,6 @@ export const ChatGPTArchiveApp: React.FC<ChatGPTArchiveAppProps> = ({
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setWidth(entry.contentRect.width);
         if (entry.contentRect.width < 640) {
           setIsSidebarCollapsed(true);
         }
@@ -75,57 +80,26 @@ export const ChatGPTArchiveApp: React.FC<ChatGPTArchiveAppProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // Fetch conversation detail when selected
-  useEffect(() => {
-    if (!selectedConversationId) {
-      setConversation(null);
-      setMessages([]);
-      return;
-    }
-
-    async function fetchConversation() {
-      try {
-        const response = await fetch(
-          `/api/chatgpt/conversations/${selectedConversationId}`
-        );
-        const result = await response.json();
-
-        if (result.success) {
-          setConversation(result.data);
-          // Fetch messages
-          fetchMessages(selectedConversationId!, true);
-        } else {
-          console.error('Failed to fetch conversation:', result.error);
-        }
-      } catch (err) {
-        console.error('Error fetching conversation:', err);
-      }
-    }
-
-    fetchConversation();
-  }, [selectedConversationId]);
-
   // Fetch messages
   const fetchMessages = useCallback(
-    async (convId: string, reset = false) => {
+    async (convId: string, cursor: string | null, signal: AbortSignal) => {
       try {
-        setIsLoadingMessages(true);
-
         const params = new URLSearchParams();
-        if (!reset && messagesCursor) {
-          params.set('cursor', messagesCursor);
+        if (cursor) {
+          params.set('cursor', cursor);
         }
         params.set('limit', '50');
 
         const response = await fetch(
-          `/api/chatgpt/conversations/${convId}/messages?${params}`
+          `/api/chatgpt/conversations/${convId}/messages?${params}`, { signal }
         );
         const result = await response.json();
+        if (signal.aborted) return;
 
         if (result.success) {
           const data = result.data as PaginatedResponse<Message>;
 
-          if (reset) {
+          if (!cursor) {
             setMessages(data.data);
           } else {
             setMessages((prev) => [...prev, ...data.data]);
@@ -135,44 +109,78 @@ export const ChatGPTArchiveApp: React.FC<ChatGPTArchiveAppProps> = ({
           setMessagesCursor(data.next_cursor);
         }
       } catch (err) {
+        if (signal.aborted) return;
         console.error('Error fetching messages:', err);
       } finally {
-        setIsLoadingMessages(false);
+        if (!signal.aborted) setIsLoadingMessages(false);
       }
     },
-    [messagesCursor]
+    []
   );
+
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    const controller = new AbortController();
+    conversationRequest.current = controller;
+    async function fetchConversation() {
+      try {
+        const response = await fetch(`/api/chatgpt/conversations/${selectedConversationId}`, { signal: controller.signal });
+        const result = await response.json();
+        if (controller.signal.aborted) return;
+        if (!result.success) throw new Error(result.error || 'Failed to fetch conversation');
+        setConversation(result.data);
+        await fetchMessages(selectedConversationId!, null, controller.signal);
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          console.error('Error fetching conversation:', err);
+          setIsLoadingMessages(false);
+        }
+      }
+    }
+    void fetchConversation();
+    return () => controller.abort();
+  }, [selectedConversationId, fetchMessages]);
 
   // Load more messages
   const loadMoreMessages = useCallback(() => {
-    if (selectedConversationId && messagesCursor && !isLoadingMessages) {
-      fetchMessages(selectedConversationId, false);
+    if (selectedConversationId && messagesCursor && !isLoadingMessages && conversationRequest.current) {
+      setIsLoadingMessages(true);
+      void fetchMessages(selectedConversationId, messagesCursor, conversationRequest.current.signal);
     }
   }, [selectedConversationId, messagesCursor, isLoadingMessages, fetchMessages]);
 
   // Handle conversation selection
   const handleSelectConversation = useCallback((id: string) => {
+    if (id === selectedConversationId) return;
+    conversationRequest.current?.abort();
     setSelectedConversationId(id);
+    setConversation(null);
     setMessages([]);
+    setIsLoadingMessages(true);
+    setHasMoreMessages(false);
     setMessagesCursor(null);
     setHighlightMessageId(null);
-  }, []);
+  }, [selectedConversationId]);
 
   // Handle back to list
   const handleBack = useCallback(() => {
+    conversationRequest.current?.abort();
     setSelectedConversationId(null);
     setConversation(null);
     setMessages([]);
+    setMessagesCursor(null);
+    setHasMoreMessages(false);
+    setIsLoadingMessages(false);
     setHighlightMessageId(null);
   }, []);
 
   // Handle search result click
   const handleSearchResultClick = useCallback(
     (conversationId: string, messageId: string) => {
-      setSelectedConversationId(conversationId);
+      handleSelectConversation(conversationId);
       setHighlightMessageId(messageId);
     },
-    []
+    [handleSelectConversation]
   );
 
   // Render sidebar content
@@ -272,12 +280,12 @@ export const ChatGPTArchiveApp: React.FC<ChatGPTArchiveAppProps> = ({
       ref={containerRef}
       className="flex flex-col h-full w-full bg-white text-[#333] font-sans relative overflow-hidden drag-handle"
     >
-      {/* Window controls */}
-      <div className="absolute top-0 right-0 z-50 flex items-center gap-2 p-3 drag-handle">
+      {/* Window controls are supplied by the macOS shell when embedded. */}
+      {!embedded && <div className="absolute top-0 right-0 z-50 flex items-center gap-2 p-3 drag-handle">
         <button
           onClick={(e) => {
             e.stopPropagation();
-            minimizeWindow(windowId);
+            onRequestMinimize ? onRequestMinimize() : minimizeWindow(windowId);
           }}
           className="p-1 hover:bg-gray-200/50 rounded-md text-gray-400 hover:text-gray-600 transition-colors"
         >
@@ -295,13 +303,13 @@ export const ChatGPTArchiveApp: React.FC<ChatGPTArchiveAppProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            closeWindow(windowId);
+            onRequestClose ? onRequestClose() : closeWindow(windowId);
           }}
           className="p-1 hover:bg-red-100 rounded-md text-gray-400 hover:text-red-500 transition-colors"
         >
           <X size={16} />
         </button>
-      </div>
+      </div>}
 
       {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { getConversationById } from '@/lib/supabase/claude-database';
-import { getMockConversation } from '@/lib/mock/claude-data';
 import { ApiResponse } from '@/types';
+import { isPublicShowcaseContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/claude/conversations/[id]
@@ -15,10 +15,9 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Use mock data if Supabase is not configured
-    const conversation = isSupabaseConfigured
+    const conversation = isSupabaseConfigured && isPublicShowcaseContent('claude', id)
       ? await getConversationById(id)
-      : getMockConversation(id);
+      : null;
 
     if (!conversation) {
       return NextResponse.json<ApiResponse>(

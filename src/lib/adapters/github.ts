@@ -1,68 +1,70 @@
 import { BaseAdapter } from './base';
-import { GitHubAppData, GitHubRepo } from '@/types';
+import { GitHubAppData, GitHubFile, GitHubRepo } from '@/types';
 
-/**
- * GitHub数据适配器
- * 处理从GitHub导出的数据
- */
+type RepositoryInput = Record<string, unknown> & { name: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function repositoryList(data: unknown): unknown {
+  return isRecord(data) ? data.repos : data;
+}
+
+function isRepository(value: unknown): value is RepositoryInput {
+  return isRecord(value) && typeof value.name === 'string' && value.name.length > 0;
+}
+
+function isFile(value: unknown): value is GitHubFile {
+  return isRecord(value) && typeof value.path === 'string'
+    && typeof value.content === 'string' && typeof value.language === 'string';
+}
+
+function stringValue(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value ? value : fallback;
+}
+
+/** Parses repository exports without trusting optional JSON fields. */
 export class GitHubAdapter extends BaseAdapter<GitHubAppData> {
   constructor() {
     super('github');
   }
 
-  /**
-   * 从上传的JSON文件中解析GitHub数据
-   */
   async parseFromFile(file: File): Promise<GitHubAppData> {
-    const text = await file.text();
-    const json = JSON.parse(text);
+    const json: unknown = JSON.parse(await file.text());
     return this.parseFromJSON(json);
   }
 
-  /**
-   * 从JSON对象中解析数据
-   */
-  parseFromJSON(json: any): GitHubAppData {
-    if (!this.validate(json)) {
+  parseFromJSON(json: unknown): GitHubAppData {
+    const repos = repositoryList(json);
+    if (!Array.isArray(repos) || !repos.every(isRepository)) {
       throw new Error('Invalid GitHub data format');
     }
-
     return {
       id: this.generateId(),
       type: 'github',
       name: 'GitHub',
       icon: '/icons/github.svg',
-      content: {
-        repos: this.parseRepos(json.repos || json),
-      },
+      content: { repos: repos.map((repo) => this.parseRepo(repo)) },
       metadata: this.createMetadata(),
     };
   }
 
-  /**
-   * 验证数据格式
-   */
-  validate(data: any): boolean {
-    // 检查是否是数组或者有repos属性
-    const repos = data.repos || data;
-    if (!Array.isArray(repos)) return false;
-
-    // 检查每个repo是否有必要的字段
-    return repos.every((repo: any) => repo.name && typeof repo.name === 'string');
+  validate(data: unknown): boolean {
+    const repos = repositoryList(data);
+    return Array.isArray(repos) && repos.every(isRepository);
   }
 
-  /**
-   * 解析仓库列表
-   */
-  private parseRepos(repos: any[]): GitHubRepo[] {
-    return repos.map((repo) => ({
-      id: repo.id || repo.name,
+  private parseRepo(repo: RepositoryInput): GitHubRepo {
+    const stars = repo.stargazers_count ?? repo.stars;
+    return {
+      id: typeof repo.id === 'number' ? String(repo.id) : stringValue(repo.id, repo.name),
       name: repo.name,
-      description: repo.description || '',
-      url: repo.url || repo.html_url || `https://github.com/${repo.full_name || repo.name}`,
-      language: repo.language || 'Unknown',
-      stars: repo.stargazers_count || repo.stars || 0,
-      files: repo.files || [],
-    }));
+      description: stringValue(repo.description),
+      url: stringValue(repo.url, stringValue(repo.html_url, `https://github.com/${stringValue(repo.full_name, repo.name)}`)),
+      language: stringValue(repo.language, 'Unknown'),
+      stars: typeof stars === 'number' && Number.isFinite(stars) ? stars : 0,
+      files: Array.isArray(repo.files) ? repo.files.filter(isFile) : [],
+    };
   }
 }

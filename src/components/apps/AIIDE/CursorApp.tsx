@@ -6,7 +6,7 @@
  * - 集成 MenuBar, ContextMenu, Tooltip 组件
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDesktopStore } from '@/lib/store/desktopStore';
 import { cn } from '@/lib/utils';
 import { MenuBar, type MenuItemData } from '@/components/ui/Menu';
@@ -49,8 +49,6 @@ import {
   RotateCcw,
   Scissors,
   Clipboard,
-  FileSearch,
-  Replace,
   MessageSquare,
   Wand2,
   Eye,
@@ -698,7 +696,11 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
   const fileContextMenu = useContextMenu();
   const editorContextMenu = useContextMenu();
   const tabContextMenu = useContextMenu();
-  const [contextTarget, setContextTarget] = useState<{ type: string; data: any } | null>(null);
+  const [contextTarget, setContextTarget] = useState<
+    | { type: 'file'; data: { node: FileNode; path: string } }
+    | { type: 'tab'; data: OpenTab }
+    | null
+  >(null);
 
   // Handlers
   const toggleFolder = useCallback((path: string) => {
@@ -793,7 +795,7 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
   ];
 
   const tabContextMenuItems: ContextMenuItemData[] = [
-    { label: 'Close', shortcut: 'Ctrl+W', onClick: () => contextTarget?.data && closeTab(contextTarget.data.name) },
+    { label: 'Close', shortcut: 'Ctrl+W', onClick: () => { if (contextTarget?.type === 'tab') closeTab(contextTarget.data.name); } },
     { label: 'Close Others' },
     { label: 'Close All' },
     { label: 'Close to the Right' },
@@ -846,15 +848,15 @@ export const CursorApp: React.FC<IDEAppProps> = ({ windowId, appType }) => {
         {/* Activity Bar */}
         <div className="w-12 bg-[#333333] flex flex-col items-center py-1 border-r border-[#252526]">
           {[
-            { id: 'files', icon: Files, tooltip: 'Explorer', shortcut: 'Ctrl+Shift+E' },
-            { id: 'search', icon: Search, tooltip: 'Search', shortcut: 'Ctrl+Shift+F' },
-            { id: 'git', icon: GitBranch, tooltip: 'Source Control', shortcut: 'Ctrl+Shift+G' },
-            { id: 'debug', icon: Bug, tooltip: 'Run and Debug', shortcut: 'Ctrl+Shift+D' },
-            { id: 'extensions', icon: Blocks, tooltip: 'Extensions', shortcut: 'Ctrl+Shift+X' },
+            { id: 'files' as const, icon: Files, tooltip: 'Explorer', shortcut: 'Ctrl+Shift+E' },
+            { id: 'search' as const, icon: Search, tooltip: 'Search', shortcut: 'Ctrl+Shift+F' },
+            { id: 'git' as const, icon: GitBranch, tooltip: 'Source Control', shortcut: 'Ctrl+Shift+G' },
+            { id: 'debug' as const, icon: Bug, tooltip: 'Run and Debug', shortcut: 'Ctrl+Shift+D' },
+            { id: 'extensions' as const, icon: Blocks, tooltip: 'Extensions', shortcut: 'Ctrl+Shift+X' },
           ].map(item => (
             <Tooltip key={item.id} content={item.tooltip} shortcut={item.shortcut} position="right">
               <button
-                onClick={() => setActiveSidebarTab(item.id as any)}
+                onClick={() => setActiveSidebarTab(item.id)}
                 className={cn(
                   "p-2.5 rounded mb-0.5 relative transition-colors",
                   activeSidebarTab === item.id
@@ -1457,8 +1459,8 @@ const DiffViewer: React.FC<DiffViewerProps> = ({ diff, mode = 'split', onClose }
   // For split view, we need to pair up lines
   const getSplitLines = () => {
     const pairs: { left: DiffLine | null; right: DiffLine | null }[] = [];
-    let leftIdx = 0;
-    let rightIdx = 0;
+    const leftIdx = 0;
+    const rightIdx = 0;
 
     const leftLines = diff.lines.filter(l => l.type === 'removed' || l.type === 'unchanged' || l.type === 'header');
     const rightLines = diff.lines.filter(l => l.type === 'added' || l.type === 'unchanged' || l.type === 'header');
@@ -2137,7 +2139,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ content, language, onCursorChan
 
 const SyntaxHighlight: React.FC<{ line: string }> = ({ line }) => {
   // Enhanced syntax highlighting
-  let highlighted = line
+  const highlighted = line
     // Keywords
     .replace(/\b(import|export|from|const|let|var|function|return|if|else|async|await|interface|type|extends|implements|class|new|this|try|catch|finally|throw|default)\b/g,
       '<span class="text-purple-400">$1</span>')
@@ -2294,13 +2296,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, appType, width = 320 }) 
       <div className="flex items-center justify-between px-2 py-1 border-b border-[#1e1e1e]">
         <div className="flex items-center gap-1">
           {[
-            { id: 'chat', label: 'Chat', icon: MessageSquare },
-            { id: 'composer', label: 'Composer', icon: Wand2 },
-            { id: 'history', label: 'History', icon: RotateCcw },
+            { id: 'chat' as const, label: 'Chat', icon: MessageSquare },
+            { id: 'composer' as const, label: 'Composer', icon: Wand2 },
+            { id: 'history' as const, label: 'History', icon: RotateCcw },
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors",
                 activeTab === tab.id

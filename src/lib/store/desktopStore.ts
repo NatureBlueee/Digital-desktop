@@ -28,14 +28,14 @@ interface DesktopState {
   selectedIconIds: string[];
   windows: WindowState[];
   activeWindowId: string | null;
-  
+
   setIcons: (icons: DesktopIcon[]) => void;
   setPinnedApps: (apps: { id: string; icon: string; title: string }[]) => void;
   updateIconPosition: (id: string, x: number, y: number) => void;
   selectIcon: (id: string, multi: boolean) => void;
   setSelectedIcons: (ids: string[]) => void;
   deselectAll: () => void;
-  
+
   openWindow: (appId: string, title: string) => void;
   closeWindow: (id: string) => void;
   minimizeWindow: (id: string) => void;
@@ -55,6 +55,7 @@ export const useDesktopStore = create<DesktopState>((set) => ({
     { id: 'cursor', title: 'Cursor', icon: '/icons/cursor-ai-code-icon.svg', x: 1, y: 2, type: 'app', appId: 'cursor', shortcut: true },
     { id: 'claude', title: 'Claude', icon: '/icons/claude-ai-icon.svg', x: 1, y: 3, type: 'app', appId: 'claude', shortcut: true },
     { id: 'chatgpt', title: 'ChatGPT', icon: '/icons/chatgpt-icon.svg', x: 1, y: 4, type: 'app', appId: 'chatgpt', shortcut: true },
+    { id: 'midjourney', title: 'Midjourney', icon: '/icons/midjourney.svg', x: 2, y: 1, type: 'app', appId: 'midjourney', shortcut: true },
     { id: 'new-folder', title: '新建文件夹', icon: 'https://img.icons8.com/fluency/96/folder-invoices--v1.png', x: 2, y: 0, type: 'folder' },
   ],
   pinnedApps: [

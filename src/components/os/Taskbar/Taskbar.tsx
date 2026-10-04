@@ -80,7 +80,7 @@ function SortableApp({ app, isActive, isOpen, onClick }: SortableAppProps) {
   }
 
   const isUrl = app.icon.startsWith('http') || app.icon.startsWith('/');
-  const Icon = !isUrl ? (LucideIcons as any)[app.icon] || LucideIcons.AppWindow : null;
+  const Icon = !isUrl ? LucideIcons.icons[app.icon as keyof typeof LucideIcons.icons] || LucideIcons.AppWindow : null;
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>

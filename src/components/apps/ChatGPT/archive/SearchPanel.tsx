@@ -32,7 +32,7 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Search function
   const search = useCallback(async (q: string, cursor?: string, append = false) => {

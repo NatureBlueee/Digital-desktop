@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchMessages } from '@/lib/supabase/chatgpt-database';
 import { ApiResponse, PaginatedResponse, SearchResultItem } from '@/types/chatgpt-archive';
+import { hasPublishedContent, isPublicShowcaseContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/chatgpt/search
@@ -31,6 +32,10 @@ export async function GET(request: NextRequest) {
       ? parseInt(searchParams.get('limit')!, 10)
       : undefined;
 
+    if (!hasPublishedContent('chatgpt')) {
+      return NextResponse.json<ApiResponse<PaginatedResponse<SearchResultItem>>>({ success: true, data: { data: [], next_cursor: null, has_more: false } });
+    }
+
     const result = await searchMessages({
       q: q.trim(),
       cursor,
@@ -39,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     const response: ApiResponse<PaginatedResponse<SearchResultItem>> = {
       success: true,
-      data: result,
+      data: { ...result, data: result.data.filter((item) => isPublicShowcaseContent('chatgpt', item.conversation_id)), next_cursor: null, has_more: false },
     };
 
     return NextResponse.json(response);

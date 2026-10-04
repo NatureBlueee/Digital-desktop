@@ -47,8 +47,8 @@ export async function GET(
           recordMap,
         });
       }
-    } catch (unofficialError: any) {
-      console.log('Unofficial API failed:', unofficialError.message || unofficialError);
+    } catch (unofficialError) {
+      console.log('Unofficial API failed:', unofficialError instanceof Error ? unofficialError.message : unofficialError);
     }
 
     // 回退到官方 API

@@ -2,12 +2,21 @@
   "name": "digital-desktop",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "monaco-editor": {
+      "dompurify": "3.4.16"
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "code-server": "code-server --bind-addr 0.0.0.0:3001 --auth none .",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' node --require ts-node/register --test src/lib/notion/database-summary.test.ts",
+    "test:release": "playwright test",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build",
+    "code-server": "code-server --bind-addr 127.0.0.1:3001 --auth none .",
     "parse-project": "npx ts-node scripts/parse-project.ts",
     "upload-project": "npx ts-node scripts/upload-project.ts"
   },
@@ -24,12 +33,12 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.555.0",
-    "monaco-editor": "^0.55.1",
-    "next": "latest",
+    "monaco-editor": "^0.57.0",
+    "next": "^16.3.8",
     "notion-client": "^7.7.3",
-    "react": "latest",
+    "react": "^19.3.0",
     "react-contexify": "^6.0.0",
-    "react-dom": "latest",
+    "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0",
     "react-notion-x": "^7.7.3",
     "react-rnd": "^10.5.2",
@@ -39,12 +48,13 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.0.1",
     "eslint": "^9",
-    "eslint-config-next": "^15.0.0",
+    "eslint-config-next": "^16.3.8",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
     "ts-node": "^10.9.2",

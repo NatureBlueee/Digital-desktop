@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getAllTags } from '@/lib/supabase/claude-database';
+import { getPublicConversations } from '@/lib/supabase/claude-database';
 import { ApiResponse } from '@/types';
+import { filterPublicShowcaseContent, hasPublishedContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/claude/tags
@@ -8,7 +9,9 @@ import { ApiResponse } from '@/types';
  */
 export async function GET() {
   try {
-    const tags = await getAllTags();
+    const tags = !hasPublishedContent('claude')
+      ? []
+      : Array.from(new Set(filterPublicShowcaseContent('claude', (await getPublicConversations({ limit: 100 })).data).flatMap((conversation) => conversation.tags))).sort();
 
     return NextResponse.json<ApiResponse>({
       success: true,

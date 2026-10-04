@@ -1,4 +1,4 @@
-import { ClaudeAppData, ClaudeConversation, ClaudeMessage } from "@/types";
+import { ClaudeConversation } from "@/types";
 
 // Mock data for now
 export const MOCK_CONVERSATION: ClaudeConversation = {
@@ -32,6 +32,8 @@ export const MOCK_CONVERSATION: ClaudeConversation = {
 };
 
 export async function getClaudeConversation(id: string): Promise<ClaudeConversation> {
+  // The mock currently serves the same conversation for every requested ID.
+  void id;
   // In the future, this could fetch from an API or read a local file
   return new Promise((resolve) => {
     setTimeout(() => resolve(MOCK_CONVERSATION), 500);

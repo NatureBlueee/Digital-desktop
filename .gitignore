@@ -23,6 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 
 # vercel
@@ -36,3 +37,10 @@ next-env.d.ts
 Clean-temp/
 *.asar
 extraction-results/
+# 本地管理 2026-10-03：嵌套仓库与可再生产物
+node_modules/
+venv/
+.venv/
+__pycache__/
+.playwright-cli/
+*.blend1

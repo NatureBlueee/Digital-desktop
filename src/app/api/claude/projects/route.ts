@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProjects } from '@/lib/supabase/claude-database';
 import { ApiResponse } from '@/types';
+import { hasPublishedContent } from '@/lib/showcase/content-policy';
 
 /**
  * GET /api/claude/projects
@@ -11,6 +12,10 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const cursor = searchParams.get('cursor') || undefined;
     const limit = searchParams.get('limit');
+
+    if (!hasPublishedContent('claude')) {
+      return NextResponse.json<ApiResponse>({ success: true, data: { data: [], next_cursor: null, has_more: false } });
+    }
 
     const result = await getProjects({
       cursor,
